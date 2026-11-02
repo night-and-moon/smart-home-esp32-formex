@@ -661,7 +661,7 @@
                 <span class="text-slate-500">Formex</span>
               </h1>
               <p class="mt-2 hidden max-w-[430px] text-[11px] leading-relaxed text-slate-400 sm:block">
-                Mô hình 1:1 theo mm · Gầm sàn kỹ thuật · 10 datastream Blynk trực tiếp.
+                Mô hình 1:1 theo mm · Gầm sàn kỹ thuật · 10 datastream Blynk.
               </p>
               <div class="mt-3 hidden flex-wrap gap-1.5 sm:flex">
                 <span class="model-chip"><strong>550 × 400</strong> mm</span>
@@ -894,7 +894,7 @@
                 </span>
                 <span class="min-w-0">
                   <span class="scenario-title">Quạt hút</span>
-                  <span class="scenario-desc">Relay 2 · DC fan</span>
+                  <span class="scenario-desc">Relay K1 · DC fan</span>
                 </span>
               </button>
             </div>
@@ -910,7 +910,7 @@
           </section>
 
           <div class="mt-4 flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">
-            <span class="flex items-center gap-1.5"><span class="live-dot"></span> MQTT 2.1s</span>
+            <span class="flex items-center gap-1.5"><span class="live-dot"></span> Blynk 2.1s</span>
             <span>Heap 248 KB</span>
             <span>RSSI -54 dBm</span>
           </div>
@@ -969,7 +969,7 @@
       light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
       rain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H7a5 5 0 1 1 1.9-9.6A6 6 0 0 1 20 12a3.5 3.5 0 0 1-2.5 7Z"/><path d="M8 22v-3M12 22v-3M16 22v-3"/></svg>`,
       motion: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 0 1 16 0"/><circle cx="12" cy="7" r="3"/><path d="M4 18h16"/></svg>`,
-      buzzer: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a9 9 0 0 1 0 12"/></svg>`,
+      shield: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z"/><path d="m9 12 2 2 4-4"/></svg>`,
       bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M8.5 14.5A6 6 0 1 1 15.5 14.5c-.8.8-1.5 1.8-1.5 3.5h-4c0-1.7-.7-2.7-1.5-3.5Z"/></svg>`,
       door: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V3h12v18"/><path d="M14 12h.01"/></svg>`,
       fan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.7"/><path d="M12 10.3c-.8-3.6-2.6-5-4.7-4.5-2.1.5-2.8 2.7-.7 4.2 1.2.9 3.4 1.4 5.4.3Z"/><path d="M13.7 12c3.6-.8 5-2.6 4.5-4.7-.5-2.1-2.7-2.8-4.2-.7-.9 1.2-1.4 3.4-.3 5.4Z"/><path d="M12 13.7c.8 3.6 2.6 5 4.7 4.5 2.1-.5 2.8-2.7.7-4.2-1.2-.9-3.4-1.4-5.4-.3Z"/><path d="M10.3 12c-3.6.8-5 2.6-4.5 4.7.5 2.1 2.7 2.8 4.2.7.9-1.2 1.4-3.4.3-5.4Z"/></svg>`,
@@ -978,14 +978,14 @@
     const STREAMS = [
       { id: 'V0', label: 'Nhiệt độ', sensor: 'DHT22', icon: 'temp', color: '#38bdf8', unit: '°C', max: 50, decimals: 1, range: '0–50' },
       { id: 'V1', label: 'Độ ẩm', sensor: 'DHT22', icon: 'humidity', color: '#22d3ee', unit: '%', max: 100, decimals: 1, range: '0–100' },
-      { id: 'V2', label: 'Khí gas', sensor: 'MQ-2', icon: 'gas', color: '#fb7185', unit: 'ppm', max: 1000, decimals: 0, range: '0–1000' },
-      { id: 'V3', label: 'Ánh sáng', sensor: 'LDR', icon: 'light', color: '#fbbf24', unit: 'lx', max: 1000, decimals: 0, range: '0–1000' },
-      { id: 'V4', label: 'Cảm biến mưa', sensor: 'FC-37', icon: 'rain', color: '#60a5fa', digital: true, range: '0 / 1' },
-      { id: 'V5', label: 'Chuyển động', sensor: 'HC-SR501', icon: 'motion', color: '#a78bfa', digital: true, range: '0 / 1' },
-      { id: 'V6', label: 'Còi báo', sensor: 'Buzzer', icon: 'buzzer', color: '#fb7185', digital: true, range: '0 / 1' },
-      { id: 'V7', label: 'Relay đèn', sensor: 'Relay 1', icon: 'bulb', color: '#fbbf24', digital: true, range: '0 / 1' },
-      { id: 'V8', label: 'Cửa RFID', sensor: 'RC522', icon: 'door', color: '#22d3ee', digital: true, range: '0 / 1' },
-      { id: 'V9', label: 'Quạt hút', sensor: 'Relay 2', icon: 'fan', color: '#34d399', digital: true, range: '0 / 1' },
+      { id: 'V2', label: 'Khí gas', sensor: 'MQ-2', icon: 'gas', color: '#fb7185', unit: 'ADC', max: 4095, decimals: 0, range: '0–4095' },
+      { id: 'V3', label: 'Ánh sáng', sensor: 'BH1750', icon: 'light', color: '#fbbf24', unit: 'lx', max: 2000, decimals: 0, range: '0–65535' },
+      { id: 'V4', label: 'Mưa / mái che', sensor: 'LM393 + Servo', icon: 'rain', color: '#60a5fa', digital: true, range: '0 / 1' },
+      { id: 'V5', label: 'Chuyển động', sensor: 'HC-SR501', icon: 'motion', color: '#a78bfa', digital: true, max: 2, scaleLabel: '/ 2', range: '0 / 1 / 2' },
+      { id: 'V6', label: 'Quạt hút', sensor: 'Relay K1', icon: 'fan', color: '#34d399', digital: true, range: '0 / 1' },
+      { id: 'V7', label: 'Đèn chính', sensor: 'Relay K2', icon: 'bulb', color: '#fbbf24', digital: true, range: '0 / 1' },
+      { id: 'V8', label: 'Cửa RFID', sensor: 'Servo + RC522', icon: 'door', color: '#22d3ee', digital: true, range: '0 / 1' },
+      { id: 'V9', label: 'An ninh', sensor: 'Armed', icon: 'shield', color: '#c084fc', digital: true, range: '0 / 1' },
     ];
 
     streamsGrid.innerHTML = STREAMS.map((stream) => `
@@ -1000,7 +1000,7 @@
         </div>
         <div class="stream-value-row">
           <span class="stream-value" data-value>0</span>
-          <span class="stream-unit">${stream.digital ? '/ 1' : stream.unit}</span>
+          <span class="stream-unit">${stream.digital ? (stream.scaleLabel || '/ 1') : stream.unit}</span>
         </div>
         <div class="stream-bar"><span data-bar></span></div>
         <div class="stream-foot">
@@ -1041,7 +1041,7 @@
       holdAt: 0,
     };
 
-    const sim = { V0: 27.4, V1: 61.5, V2: 138, V3: 310, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V9: 0 };
+    const sim = { V0: 27.4, V1: 61.5, V2: 320, V3: 18, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V9: 0 };
     const startedAt = performance.now();
     const baseAmbientColor = new THREE.Color(0xa9c8e8);
     const alarmAmbientColor = new THREE.Color(0xff2d2d);
@@ -1996,15 +1996,15 @@
         }
       } else if (name === 'lights') {
         state.lights = !state.lights;
-        showToast(state.lights ? 'Đèn đã bật' : 'Đèn đã tắt', state.lights ? 'Relay 1 cấp nguồn cho phòng khách và phòng ngủ.' : 'Relay 1 ngắt nguồn chiếu sáng.', 'info');
+        showToast(state.lights ? 'Đèn đã bật' : 'Đèn đã tắt', state.lights ? 'Relay K2 cấp nguồn cho phòng khách và phòng ngủ.' : 'Relay K2 ngắt nguồn chiếu sáng.', 'info');
         announce(state.lights ? 'Đã bật đèn phòng khách và phòng ngủ.' : 'Đã tắt đèn.');
       } else if (name === 'fan') {
         state.fan = !state.fan;
         if (state.gas && !state.fan) {
-          showToast('Quạt hút vẫn chạy', 'Relay 2 đang ở chế độ tự động do cảnh báo gas.', 'alert');
+          showToast('Quạt hút vẫn chạy', 'Relay K1 đang ở chế độ tự động do cảnh báo gas.', 'alert');
           announce('Quạt hút vẫn chạy tự động do cảnh báo gas.');
         } else {
-          showToast(state.fan ? 'Quạt hút đã bật' : 'Quạt hút đã tắt', state.fan ? 'Relay 2 đóng · quạt DC chạy 100%.' : 'Relay 2 mở · quạt DC dừng.', 'info');
+          showToast(state.fan ? 'Quạt hút đã bật' : 'Quạt hút đã tắt', state.fan ? 'Relay K1 đóng · quạt DC chạy 100%.' : 'Relay K1 mở · quạt DC dừng.', 'info');
           announce(state.fan ? 'Đã bật quạt hút.' : 'Đã tắt quạt hút.');
         }
       }
@@ -2024,14 +2024,14 @@
       switch (stream.id) {
         case 'V0': return value > 31 ? 'HƠI ẤM' : value < 24 ? 'MÁT' : 'ỔN ĐỊNH';
         case 'V1': return value > 75 ? 'ĐỘ ẨM CAO' : value < 40 ? 'KHÔ' : 'ẨM VỪA';
-        case 'V2': return state.gas ? 'NGUY HIỂM' : 'AN TOÀN';
-        case 'V3': return state.lights ? 'ĐỦ SÁNG' : 'ÁNH SÁNG DỊU';
-        case 'V4': return value > 0.5 ? 'MƯA' : 'KHÔ';
-        case 'V5': return value > 0.5 ? 'CHUYỂN ĐỘNG' : 'AN TOÀN';
-        case 'V6': return value > 0.5 ? 'HÚ CÒI' : 'TẮT';
+        case 'V2': return value >= 1200 ? 'NGUY HIỂM' : value >= 700 ? 'CẢNH BÁO' : 'AN TOÀN';
+        case 'V3': return value <= 30 ? 'TỐI' : value >= 100 ? 'ĐỦ SÁNG' : 'DỊU';
+        case 'V4': return value > 0.5 ? 'MƯA · ĐÓNG' : 'KHÔ · MỞ';
+        case 'V5': return value > 1.5 ? 'BÁO ĐỘNG' : value > 0.5 ? 'CÓ NGƯỜI' : 'YÊN TĨNH';
+        case 'V6': return value > 0.5 ? 'ON' : 'OFF';
         case 'V7': return value > 0.5 ? 'ON' : 'OFF';
         case 'V8': return value > 0.5 ? 'MỞ' : 'ĐÓNG';
-        case 'V9': return value > 0.5 ? 'ON' : 'OFF';
+        case 'V9': return value > 0.5 ? 'ARMED' : 'DISARM';
         default: return 'ĐỒNG BỘ';
       }
     }
@@ -2041,14 +2041,14 @@
       const targets = {
         V0: 27.2 + Math.sin(t * 0.26) * 0.42 + (state.rain ? -0.5 : 0),
         V1: 59.5 + Math.sin(t * 0.19) * 2.7 + (state.rain ? 6.5 : 0),
-        V2: state.gas ? 762 + Math.sin(t * 4.1) * 38 : 138 + Math.sin(t * 0.78) * 13,
-        V3: state.lights ? 780 + Math.sin(t * 1.8) * 26 : 302 + Math.sin(t * 0.56) * 22,
+        V2: state.gas ? 1450 + Math.sin(t * 4.1) * 55 : 320 + Math.sin(t * 0.78) * 18,
+        V3: state.lights ? 420 + Math.sin(t * 1.8) * 24 : 18 + Math.sin(t * 0.56) * 4,
         V4: state.rain ? 1 : 0,
-        V5: state.armed && state.motion ? 1 : 0,
-        V6: state.gas ? 1 : 0,
+        V5: state.armed ? (state.motion ? 2 : 0) : (state.motion ? 1 : 0),
+        V6: state.fan || state.gas ? 1 : 0,
         V7: state.lights ? 1 : 0,
         V8: door.phase !== 'closed' ? 1 : 0,
-        V9: state.fan || state.gas ? 1 : 0,
+        V9: state.armed ? 1 : 0,
       };
 
       STREAMS.forEach((stream) => {
@@ -2062,18 +2062,19 @@
         const value = sim[stream.id];
         const digital = Boolean(stream.digital);
         const on = digital ? value > 0.5 : false;
+        const barMax = stream.max ?? 1;
+        const status = streamStatus(stream, value);
         const isAlert = (stream.id === 'V2' && state.gas)
-          || (stream.id === 'V5' && state.motion)
-          || (stream.id === 'V6' && state.gas);
+          || (stream.id === 'V5' && state.motion);
 
         el.card.classList.toggle('is-on', on);
         el.card.classList.toggle('is-alert', isAlert);
-        el.value.textContent = digital ? (on ? '1' : '0') : fmt(value, stream.decimals);
-        el.bar.style.width = `${clamp(digital ? value * 100 : (value / stream.max) * 100, 0, 100)}%`;
-        el.status.textContent = streamStatus(stream, value);
+        el.value.textContent = digital ? String(Math.round(value)) : fmt(value, stream.decimals);
+        el.bar.style.width = `${clamp((value / barMax) * 100, 0, 100)}%`;
+        el.status.textContent = status;
         el.card.setAttribute(
           'aria-label',
-          `${stream.label}, ${stream.sensor}: ${digital ? (on ? '1, bật' : '0, tắt') : `${fmt(value, stream.decimals)} ${stream.unit}`}, ${streamStatus(stream, value)}`,
+          `${stream.label}, ${stream.sensor}: ${digital ? `${Math.round(value)}, ${status}` : `${fmt(value, stream.decimals)} ${stream.unit}, ${status}`}`,
         );
       });
     }
