@@ -1,0 +1,2362 @@
+<!DOCTYPE html>
+<html lang="vi" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#05080d" />
+  <meta name="description" content="Mô hình 3D tương tác Smart Home ESP32 Formex — digital twin 1:1 với 10 datastream Blynk." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%2305080d'/%3E%3Cpath d='M12 4l7 4v8l-7 4-7-4V8z' fill='none' stroke='%2322d3ee' stroke-width='1.5'/%3E%3C/svg%3E" />
+  <title>Smart Home ESP32 Formex — 3D Digital Twin</title>
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Fira Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"Fira Code"', 'ui-monospace', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg: #05080d;
+      --panel: #080d14;
+      --line: rgba(148, 163, 184, 0.12);
+      --cyan: #22d3ee;
+      --blue: #60a5fa;
+      --emerald: #34d399;
+      --amber: #fbbf24;
+      --rose: #fb7185;
+      --violet: #a78bfa;
+    }
+
+    * { box-sizing: border-box; }
+    html { color-scheme: dark; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(900px 500px at 15% -5%, rgba(37, 99, 235, 0.13), transparent 60%),
+        radial-gradient(800px 500px at 92% 5%, rgba(34, 211, 238, 0.08), transparent 65%),
+        var(--bg);
+      color: #e2e8f0;
+      font-family: "Fira Sans", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overscroll-behavior: none;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(rgba(148, 163, 184, 0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(148, 163, 184, 0.025) 1px, transparent 1px);
+      background-size: 44px 44px;
+      mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
+    }
+    ::selection { background: rgba(34, 211, 238, 0.3); color: #fff; }
+
+    .app-shell { position: relative; z-index: 1; }
+    .font-mono { font-family: "Fira Code", ui-monospace, monospace; }
+
+    #scene-container {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 48% 38%, rgba(20, 43, 68, 0.52) 0%, rgba(7, 12, 19, 0.9) 52%, #05080d 100%);
+    }
+    #scene-container::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(5, 8, 13, 0.42), transparent 22%, transparent 75%, rgba(5, 8, 13, 0.66)),
+        radial-gradient(circle at 50% 45%, transparent 45%, rgba(5, 8, 13, 0.56) 100%);
+    }
+    #scene-container canvas { display: block; touch-action: none; }
+    .css2d-layer {
+      position: absolute !important;
+      inset: 0;
+      z-index: 8;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .glass {
+      background: linear-gradient(145deg, rgba(12, 19, 30, 0.82), rgba(6, 10, 16, 0.62));
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .eyebrow {
+      font-family: "Fira Code", monospace;
+      font-size: 9px;
+      line-height: 1.4;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #64748b;
+    }
+
+    .model-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid rgba(148, 163, 184, 0.14);
+      background: rgba(10, 17, 27, 0.62);
+      color: #94a3b8;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-family: "Fira Code", monospace;
+      font-size: 8.5px;
+      letter-spacing: 0.06em;
+      white-space: nowrap;
+    }
+    .model-chip strong { color: #cbd5e1; font-weight: 500; }
+
+    .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      box-shadow: 0 0 0 4px rgba(52, 211, 153, 0.11), 0 0 12px rgba(52, 211, 153, 0.7);
+      animation: livePulse 2.4s ease-in-out infinite;
+      flex: 0 0 auto;
+    }
+    .live-dot.red {
+      background: #fb7185;
+      box-shadow: 0 0 0 4px rgba(251, 113, 133, 0.11), 0 0 12px rgba(251, 113, 133, 0.7);
+    }
+
+    .control-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      height: 38px;
+      padding: 0 11px;
+      border-radius: 10px;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      background: linear-gradient(145deg, rgba(14, 22, 34, 0.9), rgba(7, 12, 20, 0.74));
+      color: #94a3b8;
+      font-family: "Fira Code", monospace;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: color 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+      backdrop-filter: blur(12px);
+    }
+    .control-btn:hover { color: #e2e8f0; border-color: rgba(148, 163, 184, 0.3); }
+    .control-btn:active { transform: translateY(1px); }
+    .control-btn.is-active {
+      color: #a5f3fc;
+      border-color: rgba(34, 211, 238, 0.42);
+      background: linear-gradient(145deg, rgba(34, 211, 238, 0.14), rgba(8, 30, 42, 0.8));
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.11), inset 0 0 0 1px rgba(34, 211, 238, 0.06);
+    }
+    .control-btn svg { width: 15px; height: 15px; flex: 0 0 auto; }
+    .control-btn .off-icon { display: none; }
+    .control-btn.is-muted .on-icon { display: none; }
+    .control-btn.is-muted .off-icon { display: block; }
+
+    .panel-shell {
+      background:
+        radial-gradient(560px 320px at 110% -10%, rgba(34, 211, 238, 0.07), transparent 70%),
+        radial-gradient(420px 300px at -10% 100%, rgba(59, 130, 246, 0.06), transparent 70%),
+        linear-gradient(180deg, #080d14 0%, #070b11 100%);
+      border-left: 1px solid rgba(148, 163, 184, 0.1);
+    }
+    .panel-scroll {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(148, 163, 184, 0.22) transparent;
+    }
+    .panel-scroll::-webkit-scrollbar { width: 5px; }
+    .panel-scroll::-webkit-scrollbar-track { background: transparent; }
+    .panel-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.2); border-radius: 999px; }
+
+    .section-kicker {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-kicker h2 {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+      margin: 0;
+    }
+    .section-kicker .meta {
+      font-family: "Fira Code", monospace;
+      font-size: 8px;
+      letter-spacing: 0.1em;
+      color: #475569;
+      text-transform: uppercase;
+    }
+
+    .scenario-btn {
+      --accent: #22d3ee;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 64px;
+      padding: 10px 11px;
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 12px;
+      background: linear-gradient(145deg, rgba(255, 255, 255, 0.036), rgba(255, 255, 255, 0.012));
+      color: #cbd5e1;
+      text-align: left;
+      cursor: pointer;
+      overflow: hidden;
+      transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+    }
+    .scenario-btn::after {
+      content: "";
+      position: absolute;
+      inset: auto 0 0;
+      height: 1px;
+      opacity: 0;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      transition: opacity 180ms ease;
+    }
+    .scenario-btn:hover {
+      border-color: color-mix(in srgb, var(--accent) 42%, transparent);
+      background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, transparent), rgba(255, 255, 255, 0.012));
+    }
+    .scenario-btn:active { transform: translateY(1px); }
+    .scenario-btn.is-active {
+      border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+      background: linear-gradient(145deg, color-mix(in srgb, var(--accent) 16%, #0a111b), rgba(255, 255, 255, 0.02));
+      box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 11%, transparent), 0 0 24px color-mix(in srgb, var(--accent) 9%, transparent);
+    }
+    .scenario-btn.is-active::after { opacity: 1; }
+    .scenario-btn[data-scenario="rfid"] { --accent: #22d3ee; }
+    .scenario-btn[data-scenario="rain"] { --accent: #60a5fa; }
+    .scenario-btn[data-scenario="gas"] { --accent: #fb7185; }
+    .scenario-btn[data-scenario="security"] { --accent: #a78bfa; }
+    .scenario-btn[data-scenario="lights"] { --accent: #fbbf24; }
+    .scenario-btn[data-scenario="fan"] { --accent: #34d399; }
+
+    .scenario-icon {
+      display: grid;
+      place-items: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 9px;
+      flex: 0 0 auto;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 17%, transparent);
+      transition: background 180ms ease, box-shadow 180ms ease;
+    }
+    .scenario-icon svg { width: 17px; height: 17px; }
+    .scenario-btn.is-active .scenario-icon {
+      background: color-mix(in srgb, var(--accent) 22%, transparent);
+      box-shadow: 0 0 16px color-mix(in srgb, var(--accent) 18%, transparent);
+    }
+    .scenario-title {
+      display: block;
+      font-size: 11.5px;
+      font-weight: 600;
+      line-height: 1.3;
+      color: #e2e8f0;
+      padding-right: 20px;
+    }
+    .scenario-desc {
+      display: block;
+      margin-top: 2px;
+      font-family: "Fira Code", monospace;
+      font-size: 8px;
+      line-height: 1.35;
+      color: #64748b;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 125px;
+    }
+    .scenario-state {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+      font-family: "Fira Code", monospace;
+      font-size: 7.5px;
+      line-height: 1;
+      letter-spacing: 0.08em;
+      color: #475569;
+      transition: color 180ms ease;
+    }
+    .scenario-btn.is-active .scenario-state { color: var(--accent); }
+    .scenario-btn.is-alarm .scenario-state { color: #fecdd3; }
+
+    .stream-card {
+      --accent: #60a5fa;
+      position: relative;
+      overflow: hidden;
+      padding: 9px 10px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.09);
+      border-radius: 11px;
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.035), rgba(255, 255, 255, 0.008));
+      transition: border-color 220ms ease, background 220ms ease, box-shadow 220ms ease;
+    }
+    .stream-card::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 12px;
+      bottom: 12px;
+      width: 2px;
+      border-radius: 0 2px 2px 0;
+      background: var(--accent);
+      opacity: 0.28;
+      transition: opacity 220ms ease, box-shadow 220ms ease;
+    }
+    .stream-card.is-on::before,
+    .stream-card.is-alert::before { opacity: 1; box-shadow: 0 0 12px var(--accent); }
+    .stream-card.is-alert {
+      border-color: rgba(251, 113, 133, 0.38);
+      background: linear-gradient(150deg, rgba(251, 113, 133, 0.12), rgba(251, 113, 133, 0.02));
+      box-shadow: inset 0 0 20px rgba(251, 113, 133, 0.04);
+    }
+    .stream-head { display: flex; align-items: flex-start; gap: 7px; min-width: 0; }
+    .stream-icon {
+      display: grid;
+      place-items: center;
+      width: 23px;
+      height: 23px;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 9%, transparent);
+      border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+    }
+    .stream-icon svg { width: 13px; height: 13px; }
+    .stream-label {
+      font-size: 9.5px;
+      font-weight: 500;
+      line-height: 1.22;
+      color: #cbd5e1;
+      padding-top: 1px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .stream-sensor {
+      margin-top: 1px;
+      font-family: "Fira Code", monospace;
+      font-size: 7.5px;
+      line-height: 1.2;
+      letter-spacing: 0.05em;
+      color: #475569;
+      text-transform: uppercase;
+    }
+    .stream-id {
+      margin-left: auto;
+      font-family: "Fira Code", monospace;
+      font-size: 8px;
+      color: #475569;
+      flex: 0 0 auto;
+    }
+    .stream-value-row { display: flex; align-items: baseline; gap: 4px; margin-top: 8px; min-height: 23px; }
+    .stream-value {
+      font-family: "Fira Code", monospace;
+      font-size: 18px;
+      font-weight: 500;
+      line-height: 1;
+      letter-spacing: -0.03em;
+      color: #f1f5f9;
+      font-variant-numeric: tabular-nums;
+    }
+    .stream-card.is-alert .stream-value { color: #fecdd3; }
+    .stream-unit {
+      font-family: "Fira Code", monospace;
+      font-size: 8.5px;
+      color: #64748b;
+    }
+    .stream-bar {
+      height: 3px;
+      margin-top: 7px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.09);
+    }
+    .stream-bar span {
+      display: block;
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      transition: width 320ms ease;
+    }
+    .stream-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-top: 5px;
+      font-family: "Fira Code", monospace;
+      font-size: 7.5px;
+      line-height: 1.2;
+      color: #64748b;
+    }
+    .stream-foot .status { color: #94a3b8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stream-card.is-alert .stream-foot .status { color: #fda4af; }
+    .stream-foot .range { color: #334155; flex: 0 0 auto; }
+
+    .panel-footer {
+      background: linear-gradient(180deg, rgba(8, 13, 20, 0.72), rgba(7, 11, 17, 0.96));
+      border-top: 1px solid rgba(148, 163, 184, 0.09);
+      backdrop-filter: blur(14px);
+    }
+
+    .scene-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 7px;
+      border-radius: 5px;
+      border: 1px solid rgba(125, 211, 252, 0.28);
+      background: rgba(5, 10, 17, 0.8);
+      color: #bae6fd;
+      font-family: "Fira Code", monospace;
+      font-size: 8px;
+      letter-spacing: 0.12em;
+      line-height: 1;
+      text-transform: uppercase;
+      white-space: nowrap;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.38);
+      backdrop-filter: blur(6px);
+      transform: translateY(-2px);
+    }
+    .scene-label.room {
+      color: #e2e8f0;
+      border-color: rgba(148, 163, 184, 0.22);
+      background: rgba(6, 11, 18, 0.66);
+      font-size: 8.5px;
+    }
+    .scene-label.sensor { color: #67e8f9; border-color: rgba(34, 211, 238, 0.34); }
+    .scene-label.sensor::before {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 8px #22d3ee;
+      flex: 0 0 auto;
+    }
+    .scene-label.hot { color: #fda4af; border-color: rgba(251, 113, 133, 0.4); }
+    .scene-label.hot::before { background: #fb7185; box-shadow: 0 0 8px #fb7185; }
+
+    .alarm-vignette {
+      position: absolute;
+      inset: 0;
+      z-index: 6;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 500ms ease;
+      background:
+        radial-gradient(circle at 50% 50%, transparent 38%, rgba(127, 29, 29, 0.22) 78%, rgba(239, 68, 68, 0.26) 100%);
+      box-shadow: inset 0 0 100px rgba(239, 68, 68, 0.16);
+    }
+    .alarm-vignette.is-on { opacity: 1; animation: dangerPulse 2.2s ease-in-out infinite; }
+
+    .alarm-banner {
+      position: absolute;
+      z-index: 35;
+      top: 178px;
+      left: 50%;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      max-width: calc(100% - 32px);
+      padding: 8px 13px;
+      border-radius: 9px;
+      border: 1px solid rgba(251, 113, 133, 0.48);
+      background: rgba(51, 8, 18, 0.88);
+      color: #fecdd3;
+      font-family: "Fira Code", monospace;
+      font-size: 9px;
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      box-shadow: 0 0 32px rgba(239, 68, 68, 0.18);
+      backdrop-filter: blur(16px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, -8px);
+      transition: opacity 240ms ease, transform 240ms ease;
+    }
+    .alarm-banner.is-on { opacity: 1; transform: translate(-50%, 0); }
+    .alarm-banner svg { width: 15px; height: 15px; color: #fb7185; }
+
+    .toast {
+      position: absolute;
+      z-index: 40;
+      left: 50%;
+      bottom: 84px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      max-width: calc(100% - 40px);
+      min-width: 220px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid rgba(34, 211, 238, 0.3);
+      background: rgba(6, 13, 21, 0.92);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(16px);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 10px);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+    .toast.is-on { opacity: 1; transform: translate(-50%, 0); }
+    .toast .toast-icon {
+      display: grid;
+      place-items: center;
+      width: 26px;
+      height: 26px;
+      flex: 0 0 auto;
+      border-radius: 7px;
+      color: #22d3ee;
+      background: rgba(34, 211, 238, 0.1);
+      border: 1px solid rgba(34, 211, 238, 0.18);
+    }
+    .toast .toast-icon svg { width: 14px; height: 14px; }
+    .toast-title { font-size: 11px; font-weight: 600; line-height: 1.2; color: #f1f5f9; }
+    .toast-message { margin-top: 1px; font-family: "Fira Code", monospace; font-size: 8.5px; line-height: 1.25; color: #64748b; }
+    .toast.is-alert { border-color: rgba(251, 113, 133, 0.45); }
+    .toast.is-alert .toast-icon { color: #fb7185; background: rgba(251, 113, 133, 0.1); border-color: rgba(251, 113, 133, 0.2); }
+
+    .loader {
+      position: absolute;
+      inset: 0;
+      z-index: 60;
+      display: grid;
+      place-items: center;
+      background: #05080d;
+      transition: opacity 500ms ease, visibility 500ms ease;
+    }
+    .loader.is-hidden { opacity: 0; visibility: hidden; }
+    .loader-ring {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      border: 1px solid rgba(34, 211, 238, 0.13);
+      border-top-color: #22d3ee;
+      animation: spin 900ms linear infinite;
+      box-shadow: 0 0 30px rgba(34, 211, 238, 0.08);
+    }
+
+    :focus-visible {
+      outline: 2px solid rgba(34, 211, 238, 0.85);
+      outline-offset: 2px;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.86); }
+    }
+    @keyframes dangerPulse {
+      0%, 100% { opacity: 0.65; }
+      50% { opacity: 1; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1023px) {
+      .panel-shell { border-left: 0; border-top: 1px solid rgba(148, 163, 184, 0.1); }
+      .alarm-banner { top: 146px; }
+    }
+    @media (max-width: 639px) {
+      .scenario-desc { max-width: 100px; }
+      .stream-value { font-size: 17px; }
+    }
+    @media (min-width: 1024px) and (max-height: 1000px) {
+      .panel-scroll {
+        padding-top: 16px !important;
+        padding-bottom: 12px !important;
+      }
+      .panel-scroll > section + section { margin-top: 14px !important; }
+      .section-kicker { margin-bottom: 7px; }
+      #scenario-grid { gap: 7px; }
+      .scenario-btn { min-height: 57px; padding: 8px 9px; gap: 8px; }
+      .scenario-icon { width: 29px; height: 29px; border-radius: 8px; }
+      .scenario-title { font-size: 11px; }
+      .scenario-desc { max-width: 118px; font-size: 7.8px; }
+      #streams-grid { gap: 6px; }
+      .stream-card { padding: 6px 9px 5px; }
+      .stream-head { gap: 6px; }
+      .stream-icon { width: 20px; height: 20px; border-radius: 6px; }
+      .stream-icon svg { width: 12px; height: 12px; }
+      .stream-label { font-size: 9px; }
+      .stream-sensor { font-size: 7px; }
+      .stream-id { font-size: 7.5px; }
+      .stream-value-row { margin-top: 4px; min-height: 18px; }
+      .stream-value { font-size: 16px; }
+      .stream-unit { font-size: 8px; }
+      .stream-bar { margin-top: 4px; height: 2.5px; }
+      .stream-foot { margin-top: 3px; font-size: 7px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="app-shell min-h-screen lg:h-screen lg:overflow-hidden">
+    <main class="grid min-h-screen grid-cols-1 lg:h-full lg:min-h-0 lg:grid-cols-12">
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           3D VIEWPORT
+      ═══════════════════════════════════════════════════════════════════ -->
+      <section class="relative h-[58vh] min-h-[430px] lg:col-span-8 lg:h-full" aria-label="Mô hình 3D Smart Home ESP32 Formex">
+        <div id="scene-container"></div>
+        <div id="alarm-vignette" class="alarm-vignette" aria-hidden="true"></div>
+
+        <!-- Top overlay -->
+        <div class="pointer-events-none absolute inset-x-0 top-0 z-20 p-4 sm:p-5 lg:p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div class="pointer-events-auto min-w-0">
+              <div class="flex items-center gap-2.5">
+                <div class="grid h-8 w-8 place-items-center rounded-lg border border-cyan-400/25 bg-cyan-400/10 text-cyan-300 shadow-[0_0_22px_rgba(34,211,238,0.12)]">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.45" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4" aria-hidden="true">
+                    <path d="M12 2.7 20 7v10l-8 4.3L4 17V7l8-4.3Z" />
+                    <path d="m4 7 8 4.3L20 7M12 11.3V21.3" />
+                  </svg>
+                </div>
+                <div class="eyebrow flex items-center gap-2">
+                  <span class="live-dot"></span>
+                  Cutaway digital twin
+                  <span class="text-slate-700">/</span>
+                  <span class="text-slate-500">live</span>
+                </div>
+              </div>
+              <h1 class="mt-2.5 text-[clamp(1.35rem,2.5vw,2.15rem)] font-semibold leading-[1.05] tracking-[-0.025em] text-slate-100">
+                Smart Home <span class="text-cyan-300">ESP32</span><br class="sm:hidden" />
+                <span class="text-slate-500">Formex</span>
+              </h1>
+              <p class="mt-2 hidden max-w-[430px] text-[11px] leading-relaxed text-slate-400 sm:block">
+                Mô hình 1:1 theo mm · Gầm sàn kỹ thuật · 10 datastream Blynk trực tiếp.
+              </p>
+              <div class="mt-3 hidden flex-wrap gap-1.5 sm:flex">
+                <span class="model-chip"><strong>550 × 400</strong> mm</span>
+                <span class="model-chip"><strong>6</strong> phân khu</span>
+                <span class="model-chip"><strong>10</strong> datastreams</span>
+                <span class="model-chip"><strong>4</strong> relay</span>
+              </div>
+            </div>
+
+            <div class="pointer-events-auto grid grid-cols-2 gap-1.5 sm:flex sm:max-w-[52%] sm:flex-wrap sm:justify-end">
+              <button id="btn-labels" type="button" class="control-btn is-active" aria-pressed="true" title="Bật/tắt nhãn trong mô hình">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 13.2 13.2 20a2 2 0 0 1-2.8 0L3 12.5V3h9.5l7.5 7.5a2 2 0 0 1 0 2.7Z" />
+                  <circle cx="7.5" cy="7.5" r="1.25" />
+                </svg>
+                <span class="ctrl-label hidden sm:inline">Nhãn</span>
+              </button>
+              <button id="btn-wireframe" type="button" class="control-btn" aria-pressed="false" title="Bật/tắt chế độ wireframe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 2.7 21 7.5v9L12 21.3 3 16.5v-9L12 2.7Z" />
+                  <path d="m3 7.5 9 4.6 9-4.6M12 12.1v9.2M3 12.3l4.5-2.4M21 12.3l-4.5-2.4" />
+                </svg>
+                <span class="ctrl-label hidden sm:inline">Lưới</span>
+              </button>
+              <button id="btn-sound" type="button" class="control-btn is-active" aria-pressed="true" title="Bật/tắt âm thanh cảnh báo">
+                <svg class="on-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                  <path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a9 9 0 0 1 0 12" />
+                </svg>
+                <svg class="off-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M11 5 6 9H3v6h3l5 4V5Z" />
+                  <path d="m16 9 5 6M21 9l-5 6" />
+                </svg>
+                <span class="ctrl-label hidden sm:inline">Âm</span>
+              </button>
+              <button id="btn-reset" type="button" class="control-btn" title="Đưa camera về góc nhìn mặc định">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                  <path d="M3 3v5h5" />
+                  <circle cx="12" cy="12" r="2.2" />
+                </svg>
+                <span class="ctrl-label hidden sm:inline">Gốc</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alarm banner -->
+        <div id="alarm-banner" class="alarm-banner" role="status" aria-live="polite">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 3 2.8 19h18.4L12 3Z" />
+            <path d="M12 9v4.5M12 16.6h.01" />
+          </svg>
+          <span id="alarm-text">Cảnh báo rò rỉ gas · quạt hút đang chạy</span>
+        </div>
+
+        <!-- Toast -->
+        <div id="toast" class="toast" role="status" aria-live="polite">
+          <div class="toast-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 13.2 13.2 20a2 2 0 0 1-2.8 0L3 12.5V3h9.5l7.5 7.5a2 2 0 0 1 0 2.7Z" />
+              <circle cx="7.5" cy="7.5" r="1.25" />
+            </svg>
+          </div>
+          <div class="min-w-0">
+            <div id="toast-title" class="toast-title">RFID hợp lệ</div>
+            <div id="toast-message" class="toast-message">Cửa chính đang mở...</div>
+          </div>
+        </div>
+
+        <!-- Bottom overlay -->
+        <div class="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 p-4 sm:p-5">
+          <div class="glass rounded-xl px-3 py-2.5">
+            <div class="flex items-center gap-2 font-mono text-[8.5px] uppercase tracking-[0.1em] text-slate-300">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5 text-cyan-300" aria-hidden="true">
+                <rect x="6" y="3" width="12" height="18" rx="6" />
+                <path d="M12 7v4" />
+              </svg>
+              <span class="hidden sm:inline">Kéo xoay · Cuộn zoom · Chuột phải pan</span>
+              <span class="sm:hidden">Kéo xoay · Chụm zoom · Hai ngón pan</span>
+            </div>
+            <div class="mt-1 font-mono text-[8px] uppercase tracking-[0.13em] text-slate-600">
+              OrbitControls · Touch enabled · Scale 1:1
+            </div>
+          </div>
+
+          <div class="hidden flex-col items-end gap-1.5 sm:flex">
+            <div class="glass flex items-center gap-2 rounded-lg px-2.5 py-1.5 font-mono text-[8px] uppercase tracking-[0.12em] text-slate-400">
+              <span class="live-dot"></span>
+              WebGL
+              <span class="text-slate-700">/</span>
+              <span id="fps">60</span> FPS
+            </div>
+            <div class="font-mono text-[8px] uppercase tracking-[0.14em] text-slate-600">
+              Cutaway 75 mm · ESP32-S3 · Blynk Cloud
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading overlay -->
+        <div id="loader" class="loader">
+          <div class="flex flex-col items-center gap-4">
+            <div class="loader-ring"></div>
+            <div class="font-mono text-[9px] uppercase tracking-[0.24em] text-slate-500">Đang dựng mô hình Formex...</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════════════
+           CONTROL PANEL
+      ═══════════════════════════════════════════════════════════════════ -->
+      <aside class="panel-shell relative flex min-h-0 flex-col lg:col-span-4 lg:h-full" aria-label="Bảng điều khiển Blynk">
+        <header class="shrink-0 border-b border-white/[0.07] px-5 pb-4 pt-5">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <div class="eyebrow">Blynk cloud · node 01</div>
+              <h2 class="mt-1.5 text-[17px] font-semibold tracking-[-0.01em] text-slate-100">Bảng điều khiển</h2>
+            </div>
+            <div class="flex flex-col items-end gap-1.5">
+              <span class="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/[0.07] px-2.5 py-1 font-mono text-[8px] uppercase tracking-[0.11em] text-emerald-300">
+                <span class="live-dot"></span> Online
+              </span>
+              <span id="clock" class="font-mono text-[8.5px] tracking-[0.08em] text-slate-500">--:--:--</span>
+            </div>
+          </div>
+          <div class="mt-4 grid grid-cols-3 gap-2">
+            <div class="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-2">
+              <div class="font-mono text-[7.5px] uppercase tracking-[0.12em] text-slate-500">Thiết bị</div>
+              <div class="mt-1 text-[10px] font-medium text-slate-200">ESP32-S3</div>
+            </div>
+            <div class="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-2">
+              <div class="font-mono text-[7.5px] uppercase tracking-[0.12em] text-slate-500">Kết nối</div>
+              <div class="mt-1 flex items-center gap-1.5 text-[10px] font-medium text-slate-200"><span class="live-dot"></span> Blynk</div>
+            </div>
+            <div class="rounded-lg border border-white/[0.07] bg-white/[0.025] px-2.5 py-2">
+              <div class="font-mono text-[7.5px] uppercase tracking-[0.12em] text-slate-500">Uptime</div>
+              <div id="uptime" class="mt-1 font-mono text-[10px] font-medium text-slate-200">00:00:00</div>
+            </div>
+          </div>
+        </header>
+
+        <div class="panel-scroll min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <!-- Scenarios -->
+          <section aria-labelledby="scenario-heading">
+            <div class="section-kicker">
+              <h2 id="scenario-heading">Kích hoạt kịch bản</h2>
+              <span class="meta">6 chế độ</span>
+            </div>
+            <div id="scenario-grid" class="grid grid-cols-2 gap-2.5">
+              <button type="button" class="scenario-btn" data-scenario="rfid" aria-pressed="false">
+                <span class="scenario-state">READY</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2" />
+                    <path d="M7 15h5M15 9h3v2" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">Quẹt RFID</span>
+                  <span class="scenario-desc">Mở cửa 5 giây</span>
+                </span>
+              </button>
+
+              <button type="button" class="scenario-btn" data-scenario="rain" aria-pressed="false">
+                <span class="scenario-state">OFF</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M17.5 19H7a5 5 0 1 1 1.9-9.6A6 6 0 0 1 20 12a3.5 3.5 0 0 1-2.5 7Z" />
+                    <path d="M8 22v-3M12 22v-3M16 22v-3" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">Trời mưa</span>
+                  <span class="scenario-desc">Mái che tự động</span>
+                </span>
+              </button>
+
+              <button type="button" class="scenario-btn" data-scenario="gas" aria-pressed="false">
+                <span class="scenario-state">SAFE</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 2.8 19h18.4L12 3Z" />
+                    <path d="M12 9v4.5M12 16.6h.01" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">Rò rỉ gas</span>
+                  <span class="scenario-desc">Còi + hút khí</span>
+                </span>
+              </button>
+
+              <button type="button" class="scenario-btn" data-scenario="security" aria-pressed="false">
+                <span class="scenario-state">DISARMED</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6l8-3Z" />
+                    <path d="m9 12 2 2 4-4" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">An ninh</span>
+                  <span class="scenario-desc">PIR + beacon</span>
+                </span>
+              </button>
+
+              <button type="button" class="scenario-btn" data-scenario="lights" aria-pressed="false">
+                <span class="scenario-state">OFF</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M9 18h6M10 22h4" />
+                    <path d="M8.5 14.5A6 6 0 1 1 15.5 14.5c-.8.8-1.5 1.8-1.5 3.5h-4c0-1.7-.7-2.7-1.5-3.5Z" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">Bật đèn</span>
+                  <span class="scenario-desc">Khách + phòng ngủ</span>
+                </span>
+              </button>
+
+              <button type="button" class="scenario-btn" data-scenario="fan" aria-pressed="false">
+                <span class="scenario-state">OFF</span>
+                <span class="scenario-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="1.7" />
+                    <path d="M12 10.3c-.8-3.6-2.6-5-4.7-4.5-2.1.5-2.8 2.7-.7 4.2 1.2.9 3.4 1.4 5.4.3Z" />
+                    <path d="M13.7 12c3.6-.8 5-2.6 4.5-4.7-.5-2.1-2.7-2.8-4.2-.7-.9 1.2-1.4 3.4-.3 5.4Z" />
+                    <path d="M12 13.7c.8 3.6 2.6 5 4.7 4.5 2.1-.5 2.8-2.7.7-4.2-1.2-.9-3.4-1.4-5.4-.3Z" />
+                    <path d="M10.3 12c-3.6.8-5 2.6-4.5 4.7.5 2.1 2.7 2.8 4.2.7.9-1.2 1.4-3.4.3-5.4Z" />
+                  </svg>
+                </span>
+                <span class="min-w-0">
+                  <span class="scenario-title">Quạt hút</span>
+                  <span class="scenario-desc">Relay 2 · DC fan</span>
+                </span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Datastreams -->
+          <section class="mt-6" aria-labelledby="streams-heading">
+            <div class="section-kicker">
+              <h2 id="streams-heading">Blynk datastreams</h2>
+              <span class="meta flex items-center gap-1.5"><span class="live-dot"></span> V0 — V9</span>
+            </div>
+            <div id="streams-grid" class="grid grid-cols-2 gap-2.5"></div>
+          </section>
+
+          <div class="mt-4 flex items-center justify-between rounded-lg border border-white/[0.06] bg-white/[0.02] px-3 py-2 font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">
+            <span class="flex items-center gap-1.5"><span class="live-dot"></span> MQTT 2.1s</span>
+            <span>Heap 248 KB</span>
+            <span>RSSI -54 dBm</span>
+          </div>
+        </div>
+
+        <footer class="panel-footer shrink-0 px-5 py-3">
+          <div class="flex items-center justify-between gap-3 font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">
+            <span class="flex items-center gap-1.5"><span class="live-dot"></span> Simulation mode</span>
+            <span id="panel-fps">RENDER 60 FPS</span>
+            <span class="text-slate-600">v1.0</span>
+          </div>
+        </footer>
+      </aside>
+    </main>
+  </div>
+
+  <div id="live-announcer" class="sr-only" aria-live="polite"></div>
+  <noscript>
+    <div style="padding:24px;color:#fecdd3;font-family:monospace">Trang này cần JavaScript để render mô hình Three.js.</div>
+  </noscript>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    /* ────────────────────────────────────────────────────────────────────
+       DOM + ICONS
+    ──────────────────────────────────────────────────────────────────── */
+    const $ = (selector, root = document) => root.querySelector(selector);
+    const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+
+    const container = $('#scene-container');
+    const streamsGrid = $('#streams-grid');
+    const alarmVignette = $('#alarm-vignette');
+    const alarmBanner = $('#alarm-banner');
+    const alarmText = $('#alarm-text');
+    const toastEl = $('#toast');
+    const toastTitle = $('#toast-title');
+    const toastMessage = $('#toast-message');
+    const announcer = $('#live-announcer');
+
+    const ICONS = {
+      temp: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 14.76V5a2 2 0 1 0-4 0v9.76a4 4 0 1 0 4 0Z"/><path d="M12 9v6"/></svg>`,
+      humidity: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3S5 10 5 15a7 7 0 0 0 14 0c0-5-7-12-7-12Z"/></svg>`,
+      gas: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2.8 19h18.4L12 3Z"/><path d="M12 9v4.5M12 16.6h.01"/></svg>`,
+      light: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
+      rain: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H7a5 5 0 1 1 1.9-9.6A6 6 0 0 1 20 12a3.5 3.5 0 0 1-2.5 7Z"/><path d="M8 22v-3M12 22v-3M16 22v-3"/></svg>`,
+      motion: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18a8 8 0 0 1 16 0"/><circle cx="12" cy="7" r="3"/><path d="M4 18h16"/></svg>`,
+      buzzer: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H3v6h3l5 4V5Z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18 6a9 9 0 0 1 0 12"/></svg>`,
+      bulb: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 22h4"/><path d="M8.5 14.5A6 6 0 1 1 15.5 14.5c-.8.8-1.5 1.8-1.5 3.5h-4c0-1.7-.7-2.7-1.5-3.5Z"/></svg>`,
+      door: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21h16M6 21V3h12v18"/><path d="M14 12h.01"/></svg>`,
+      fan: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1.7"/><path d="M12 10.3c-.8-3.6-2.6-5-4.7-4.5-2.1.5-2.8 2.7-.7 4.2 1.2.9 3.4 1.4 5.4.3Z"/><path d="M13.7 12c3.6-.8 5-2.6 4.5-4.7-.5-2.1-2.7-2.8-4.2-.7-.9 1.2-1.4 3.4-.3 5.4Z"/><path d="M12 13.7c.8 3.6 2.6 5 4.7 4.5 2.1-.5 2.8-2.7.7-4.2-1.2-.9-3.4-1.4-5.4-.3Z"/><path d="M10.3 12c-3.6.8-5 2.6-4.5 4.7.5 2.1 2.7 2.8 4.2.7.9-1.2 1.4-3.4.3-5.4Z"/></svg>`,
+    };
+
+    const STREAMS = [
+      { id: 'V0', label: 'Nhiệt độ', sensor: 'DHT22', icon: 'temp', color: '#38bdf8', unit: '°C', max: 50, decimals: 1, range: '0–50' },
+      { id: 'V1', label: 'Độ ẩm', sensor: 'DHT22', icon: 'humidity', color: '#22d3ee', unit: '%', max: 100, decimals: 1, range: '0–100' },
+      { id: 'V2', label: 'Khí gas', sensor: 'MQ-2', icon: 'gas', color: '#fb7185', unit: 'ppm', max: 1000, decimals: 0, range: '0–1000' },
+      { id: 'V3', label: 'Ánh sáng', sensor: 'LDR', icon: 'light', color: '#fbbf24', unit: 'lx', max: 1000, decimals: 0, range: '0–1000' },
+      { id: 'V4', label: 'Cảm biến mưa', sensor: 'FC-37', icon: 'rain', color: '#60a5fa', digital: true, range: '0 / 1' },
+      { id: 'V5', label: 'Chuyển động', sensor: 'HC-SR501', icon: 'motion', color: '#a78bfa', digital: true, range: '0 / 1' },
+      { id: 'V6', label: 'Còi báo', sensor: 'Buzzer', icon: 'buzzer', color: '#fb7185', digital: true, range: '0 / 1' },
+      { id: 'V7', label: 'Relay đèn', sensor: 'Relay 1', icon: 'bulb', color: '#fbbf24', digital: true, range: '0 / 1' },
+      { id: 'V8', label: 'Cửa RFID', sensor: 'RC522', icon: 'door', color: '#22d3ee', digital: true, range: '0 / 1' },
+      { id: 'V9', label: 'Quạt hút', sensor: 'Relay 2', icon: 'fan', color: '#34d399', digital: true, range: '0 / 1' },
+    ];
+
+    streamsGrid.innerHTML = STREAMS.map((stream) => `
+      <article class="stream-card" data-stream="${stream.id}" style="--accent:${stream.color}" aria-label="${stream.label}">
+        <div class="stream-head">
+          <span class="stream-icon">${ICONS[stream.icon]}</span>
+          <div class="min-w-0">
+            <div class="stream-label">${stream.label}</div>
+            <div class="stream-sensor">${stream.sensor}</div>
+          </div>
+          <span class="stream-id">${stream.id}</span>
+        </div>
+        <div class="stream-value-row">
+          <span class="stream-value" data-value>0</span>
+          <span class="stream-unit">${stream.digital ? '/ 1' : stream.unit}</span>
+        </div>
+        <div class="stream-bar"><span data-bar></span></div>
+        <div class="stream-foot">
+          <span class="status" data-status>ĐANG ĐỒNG BỘ</span>
+          <span class="range">${stream.range}</span>
+        </div>
+      </article>
+    `).join('');
+
+    const streamEls = Object.fromEntries(STREAMS.map((stream) => {
+      const card = $(`[data-stream="${stream.id}"]`, streamsGrid);
+      return [stream.id, {
+        card,
+        value: $('[data-value]', card),
+        bar: $('[data-bar]', card),
+        status: $('[data-status]', card),
+      }];
+    }));
+
+    /* ────────────────────────────────────────────────────────────────────
+       STATE
+    ──────────────────────────────────────────────────────────────────── */
+    const state = {
+      rain: false,
+      gas: false,
+      armed: false,
+      motion: false,
+      lights: false,
+      fan: false,
+      sound: true,
+      wireframe: false,
+    };
+
+    const door = {
+      angle: 0,
+      target: 0,
+      phase: 'closed',
+      holdAt: 0,
+    };
+
+    const sim = { V0: 27.4, V1: 61.5, V2: 138, V3: 310, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V9: 0 };
+    const startedAt = performance.now();
+    const baseAmbientColor = new THREE.Color(0xa9c8e8);
+    const alarmAmbientColor = new THREE.Color(0xff2d2d);
+
+    let motionUntil = 0;
+    let nextMotionAt = 0;
+    let lastGasBeepAt = 0;
+    let rfidFlashUntil = 0;
+    let lastUiUpdate = 0;
+    let lastFpsUpdate = 0;
+    let lastClockUpdate = 0;
+    let fpsFrames = 0;
+    let toastTimer = 0;
+
+    const clock = new THREE.Clock();
+    const canvasSize = { width: 1, height: 1 };
+
+    const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+    const damp = (current, target, lambda, dt) => THREE.MathUtils.damp(current, target, lambda, dt);
+    const fmt = (value, decimals = 0) => Number(value).toFixed(decimals);
+
+    function announce(message) {
+      announcer.textContent = '';
+      window.setTimeout(() => { announcer.textContent = message; }, 20);
+    }
+
+    function showToast(title, message, tone = 'info') {
+      toastTitle.textContent = title;
+      toastMessage.textContent = message;
+      toastEl.classList.toggle('is-alert', tone === 'alert');
+      toastEl.classList.add('is-on');
+      window.clearTimeout(toastTimer);
+      toastTimer = window.setTimeout(() => toastEl.classList.remove('is-on'), 3000);
+    }
+
+    /* ────────────────────────────────────────────────────────────────────
+       AUDIO — Web Audio API (created after the first user gesture)
+    ──────────────────────────────────────────────────────────────────── */
+    let audioCtx = null;
+
+    function ensureAudio() {
+      if (!state.sound) return null;
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) return null;
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      return audioCtx;
+    }
+
+    function tone(frequency, start, duration, volume = 0.035, type = 'square') {
+      if (!audioCtx) return;
+      const oscillator = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      oscillator.type = type;
+      oscillator.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+      oscillator.connect(gain).connect(audioCtx.destination);
+      oscillator.start(start);
+      oscillator.stop(start + duration + 0.02);
+    }
+
+    function gasAlarmSound() {
+      if (!state.sound || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      tone(880, now, 0.11, 0.042, 'square');
+      tone(1120, now + 0.17, 0.11, 0.042, 'square');
+      tone(880, now + 0.34, 0.08, 0.03, 'square');
+    }
+
+    function securityChirp() {
+      if (!state.sound || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      tone(1320, now, 0.07, 0.025, 'sine');
+      tone(1720, now + 0.1, 0.09, 0.023, 'sine');
+    }
+
+    function rfidChime() {
+      if (!state.sound || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      tone(660, now, 0.09, 0.03, 'sine');
+      tone(990, now + 0.11, 0.13, 0.03, 'sine');
+    }
+
+    /* ────────────────────────────────────────────────────────────────────
+       THREE.JS — CORE
+    ──────────────────────────────────────────────────────────────────── */
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05080d);
+    scene.fog = new THREE.FogExp2(0x05080d, 0.00052);
+
+    const camera = new THREE.PerspectiveCamera(38, 1, 1, 6000);
+    const homePosition = () => {
+      const aspect = Math.max(0.55, container.clientWidth / Math.max(1, container.clientHeight));
+      const distanceScale = window.innerWidth < 640 ? 1.32 : aspect < 0.95 ? 1.16 : aspect < 1.22 ? 1.04 : 1;
+      return new THREE.Vector3(545, 535, 720).multiplyScalar(distanceScale);
+    };
+    camera.position.copy(homePosition());
+
+    const renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      powerPreference: 'high-performance',
+    });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.08;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.domElement.setAttribute('aria-label', 'Mô hình 3D ngôi nhà Formex 550 x 400 mm');
+    container.appendChild(renderer.domElement);
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.domElement.className = 'css2d-layer';
+    container.appendChild(labelRenderer.domElement);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.target.set(0, 18, 0);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.065;
+    controls.screenSpacePanning = false;
+    controls.minDistance = 245;
+    controls.maxDistance = 1900;
+    controls.minPolarAngle = 0.12;
+    controls.maxPolarAngle = Math.PI / 2 - 0.025;
+    controls.update();
+
+    const modelGroup = new THREE.Group();
+    const labelsGroup = new THREE.Group();
+    scene.add(modelGroup, labelsGroup);
+
+    /* ────────────────────────────────────────────────────────────────────
+       MATERIALS + HELPERS
+    ──────────────────────────────────────────────────────────────────── */
+    const standard = (color, options = {}) => new THREE.MeshStandardMaterial({
+      color,
+      roughness: 0.82,
+      metalness: 0.03,
+      ...options,
+    });
+
+    const M = {
+      formex: standard(0xe8eef1, { roughness: 0.8, metalness: 0.04 }),
+      wall: standard(0xf1f3f2, { roughness: 0.9, metalness: 0.02 }),
+      wallInner: standard(0xe9e7e1, { roughness: 0.94 }),
+      trim: standard(0xb7c1c8, { roughness: 0.55, metalness: 0.25 }),
+      darkMetal: standard(0x202c38, { roughness: 0.38, metalness: 0.65 }),
+      base: standard(0x1c3b52, { roughness: 0.18, metalness: 0.35, transparent: true, opacity: 0.28, depthWrite: false, side: THREE.DoubleSide }),
+      tray: standard(0x08121c, { roughness: 0.7, metalness: 0.45 }),
+      pcb: standard(0x0d724a, { roughness: 0.52, metalness: 0.18, emissive: 0x06301e, emissiveIntensity: 0.55 }),
+      chip: standard(0x111820, { roughness: 0.35, metalness: 0.55 }),
+      silver: standard(0xb8c4cc, { roughness: 0.28, metalness: 0.82 }),
+      relayBlue: standard(0x164fbe, { roughness: 0.5, metalness: 0.2, emissive: 0x061b46, emissiveIntensity: 0.5 }),
+      glass: standard(0x9ed8ff, { roughness: 0.08, metalness: 0.2, transparent: true, opacity: 0.3, side: THREE.DoubleSide, depthWrite: false }),
+      canopyGlass: standard(0x5fa8e8, { roughness: 0.22, metalness: 0.3, transparent: true, opacity: 0.15, side: THREE.DoubleSide, depthWrite: false, emissive: 0x0b2f4f, emissiveIntensity: 0.2 }),
+      canopyFrame: standard(0x101b26, { roughness: 0.82, metalness: 0.08 }),
+      wood: standard(0x916a45, { roughness: 0.72, metalness: 0.02 }),
+      woodDark: standard(0x5e432d, { roughness: 0.8 }),
+      sofa: standard(0x394d60, { roughness: 0.96 }),
+      sofaLight: standard(0x526878, { roughness: 0.95 }),
+      mattress: standard(0xd7dce0, { roughness: 0.95 }),
+      blanket: standard(0x4c6b82, { roughness: 0.92 }),
+      pillow: standard(0xf0f2ef, { roughness: 0.9 }),
+      black: standard(0x0c1117, { roughness: 0.32, metalness: 0.45 }),
+      screen: standard(0x08121b, { roughness: 0.16, metalness: 0.2, emissive: 0x0b1b29, emissiveIntensity: 0.7 }),
+      counter: standard(0xd9d4c8, { roughness: 0.62 }),
+      cabinet: standard(0xb7c3c7, { roughness: 0.78 }),
+      steel: standard(0x9baab4, { roughness: 0.28, metalness: 0.8 }),
+      leaf: standard(0x3e7d5d, { roughness: 0.94 }),
+      pot: standard(0xb26f4c, { roughness: 0.86 }),
+      rug: standard(0x2d4357, { roughness: 1 }),
+      rugWarm: standard(0x6b5d4a, { roughness: 1 }),
+      warning: standard(0x2a1c1c, { emissive: 0xef4444, emissiveIntensity: 1.4, roughness: 0.35 }),
+      lampShade: standard(0xd9c6a6, { roughness: 0.86, emissive: 0x2a1c09, emissiveIntensity: 0.2, side: THREE.DoubleSide }),
+      cableRed: standard(0xd84a4a, { roughness: 0.5 }),
+      cableAmber: standard(0xdca63c, { roughness: 0.5 }),
+      cableBlue: standard(0x3d83cf, { roughness: 0.5 }),
+      cableGreen: standard(0x4caf71, { roughness: 0.5 }),
+    };
+
+    function box(w, h, d, material, x, y, z, parent = modelGroup, opts = {}) {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+      mesh.position.set(x, y, z);
+      mesh.castShadow = opts.cast !== false;
+      mesh.receiveShadow = opts.receive !== false;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function cylinder(radiusTop, radiusBottom, height, segments, material, x, y, z, parent = modelGroup, opts = {}) {
+      const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radiusTop, radiusBottom, height, segments), material);
+      mesh.position.set(x, y, z);
+      if (opts.rotation) mesh.rotation.set(...opts.rotation);
+      mesh.castShadow = opts.cast !== false;
+      mesh.receiveShadow = opts.receive !== false;
+      parent.add(mesh);
+      return mesh;
+    }
+
+    function addEdges(mesh, color = 0x9db1c2, opacity = 0.16) {
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(mesh.geometry, 20),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity, depthWrite: false }),
+      );
+      edges.position.copy(mesh.position);
+      edges.rotation.copy(mesh.rotation);
+      mesh.parent.add(edges);
+      return edges;
+    }
+
+    function addCable(start, end, radius, material, y = -18.5, parent = modelGroup) {
+      const a = new THREE.Vector3(start[0], y, start[1]);
+      const b = new THREE.Vector3(end[0], y, end[1]);
+      const direction = b.clone().sub(a);
+      const length = direction.length();
+      const cable = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, length, 8), material);
+      cable.position.copy(a).add(b).multiplyScalar(0.5);
+      cable.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+      cable.castShadow = false;
+      cable.receiveShadow = false;
+      parent.add(cable);
+      return cable;
+    }
+
+    /* ────────────────────────────────────────────────────────────────────
+       LIGHTING
+    ──────────────────────────────────────────────────────────────────── */
+    const ambient = new THREE.AmbientLight(baseAmbientColor, 0.9);
+    scene.add(ambient);
+
+    const hemi = new THREE.HemisphereLight(0xa8ceff, 0x07101a, 0.42);
+    scene.add(hemi);
+
+    const sun = new THREE.DirectionalLight(0xfff5e7, 2.35);
+    sun.position.set(500, 760, 390);
+    sun.target.position.set(0, 0, 0);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    sun.shadow.camera.left = -510;
+    sun.shadow.camera.right = 510;
+    sun.shadow.camera.top = 510;
+    sun.shadow.camera.bottom = -510;
+    sun.shadow.camera.near = 80;
+    sun.shadow.camera.far = 1900;
+    sun.shadow.bias = -0.00035;
+    sun.shadow.normalBias = 0.7;
+    scene.add(sun, sun.target);
+
+    const rim = new THREE.DirectionalLight(0x4b9cff, 0.78);
+    rim.position.set(-560, 300, -520);
+    scene.add(rim);
+
+    const livingLight = new THREE.PointLight(0xffc789, 0, 300, 0);
+    livingLight.position.set(-174, 59, 38);
+    scene.add(livingLight);
+
+    const bedroomLight = new THREE.PointLight(0xffc789, 0, 250, 0);
+    bedroomLight.position.set(-184, 55, -138);
+    scene.add(bedroomLight);
+
+    const securityLight = new THREE.PointLight(0xff334d, 0, 280, 0);
+    securityLight.position.set(198, 87, 104);
+    scene.add(securityLight);
+
+    /* ────────────────────────────────────────────────────────────────────
+       GROUND + SERVICE PLINTH
+    ──────────────────────────────────────────────────────────────────── */
+    const ground = new THREE.Mesh(
+      new THREE.CircleGeometry(790, 96),
+      standard(0x070d14, { roughness: 1, metalness: 0.02 }),
+    );
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = -31;
+    ground.receiveShadow = true;
+    scene.add(ground);
+
+    const groundRing = new THREE.Mesh(
+      new THREE.RingGeometry(612, 614, 96),
+      new THREE.MeshBasicMaterial({ color: 0x22d3ee, transparent: true, opacity: 0.11, side: THREE.DoubleSide, depthWrite: false }),
+    );
+    groundRing.rotation.x = -Math.PI / 2;
+    groundRing.position.y = -30.4;
+    scene.add(groundRing);
+
+    const grid = new THREE.GridHelper(1300, 26, 0x1b354a, 0x0b1722);
+    grid.position.y = -30.5;
+    grid.material.transparent = true;
+    grid.material.opacity = 0.25;
+    grid.material.depthWrite = false;
+    scene.add(grid);
+
+    /* ────────────────────────────────────────────────────────────────────
+       DOUBLE SUB-FLOOR · ELECTRONICS BAY (front-left cutaway)
+    ──────────────────────────────────────────────────────────────────── */
+    const baseMain = box(435, 20, 400, M.base, 57.5, -10, 0);
+    const baseLeft = box(115, 20, 310, M.base, -217.5, -10, -45);
+    addEdges(baseMain, 0x5dc5e8, 0.16);
+    addEdges(baseLeft, 0x5dc5e8, 0.14);
+
+    // bottom of the exposed service bay
+    box(115, 3, 90, M.tray, -217.5, -20, 155, modelGroup, { cast: false });
+
+    // PCB + ESP32 + 4 relay board
+    box(98, 2.2, 64, M.pcb, -217.5, -15.8, 155);
+    box(27, 2.2, 20, M.chip, -236, -13.7, 146);
+    box(18, 2.4, 14, M.silver, -236, -12.2, 146);
+    box(46, 2.5, 28, M.relayBlue, -193, -13.8, 166);
+    for (let i = 0; i < 4; i += 1) {
+      box(8.2, 6.6, 7, M.relayBlue, -207.5 + i * 10.3, -11.2, 166);
+      box(7.2, 0.7, 5.6, M.darkMetal, -207.5 + i * 10.3, -7.7, 166);
+    }
+    box(9, 4, 13, M.darkMetal, -171, -12.5, 176);
+    box(15, 2, 10, M.chip, -241, -13.5, 168);
+
+    const ledGreenMat = new THREE.MeshStandardMaterial({ color: 0x64ff9b, emissive: 0x23ff77, emissiveIntensity: 2.4, roughness: 0.3 });
+    const ledAmberMat = new THREE.MeshStandardMaterial({ color: 0xffc15c, emissive: 0xff9d18, emissiveIntensity: 2.1, roughness: 0.3 });
+    cylinder(1.3, 1.3, 1.1, 10, ledGreenMat, -226, -12.1, 142, modelGroup);
+    cylinder(1.3, 1.3, 1.1, 10, ledAmberMat, -221, -12.1, 142, modelGroup);
+
+    // four fishbone cable trunks + branches under the transparent base
+    const cableMaterials = [M.cableRed, M.cableAmber, M.cableBlue, M.cableGreen];
+    [124, 48, -42, -132].forEach((z, index) => {
+      addCable([-153, z], [244, z], 1.05, cableMaterials[index]);
+      for (let x = -70; x <= 210; x += 70) {
+        addCable([x, z], [x + 22, z + (index % 2 === 0 ? 18 : -18)], 0.72, cableMaterials[index], -18.4);
+      }
+    });
+    addCable([-217, 146], [-153, 124], 1.2, M.cableRed);
+    addCable([-217, 160], [-153, 48], 1.0, M.cableAmber);
+    addCable([-203, 170], [-153, -42], 1.0, M.cableBlue);
+    addCable([-195, 174], [-153, -132], 1.0, M.cableGreen);
+
+    // glass service hatch aligned to the top of the floor
+    const hatch = box(112, 2, 87, M.glass, -217.5, 3, 155, modelGroup, { cast: false });
+    hatch.material = new THREE.MeshStandardMaterial({
+      color: 0x5f8fa8,
+      roughness: 0.07,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.13,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+    });
+    // slim rim around the service hatch (the electronics stay visible through the glass)
+    box(116, 1.4, 2, M.steel, -217.5, 4.2, 110.8, modelGroup, { cast: false });
+    box(116, 1.4, 2, M.steel, -217.5, 4.2, 199.2, modelGroup, { cast: false });
+    box(2, 1.4, 90, M.steel, -274.2, 4.2, 155, modelGroup, { cast: false });
+    box(2, 1.4, 90, M.steel, -160.8, 4.2, 155, modelGroup, { cast: false });
+    box(14, 1.2, 2.4, M.steel, -217.5, 4.8, 196.8, modelGroup, { cast: false });
+
+    /* ────────────────────────────────────────────────────────────────────
+       SIX FUNCTIONAL FLOOR ZONES — 550 × 400 mm
+    ──────────────────────────────────────────────────────────────────── */
+    const floorMaterials = {
+      yard: standard(0xc8b89a, { roughness: 0.96 }),
+      living: standard(0xd4d7d3, { roughness: 0.9 }),
+      kitchen: standard(0xc8d5ce, { roughness: 0.9 }),
+      bed1: standard(0xc5d3e7, { roughness: 0.92 }),
+      bed2: standard(0xd6cfe4, { roughness: 0.92 }),
+      bed3: standard(0xc8dfd3, { roughness: 0.92 }),
+    };
+
+    function floorSlab(x1, x2, z1, z2, material) {
+      const width = x2 - x1 - 1.4;
+      const depth = z2 - z1 - 1.4;
+      const mesh = box(width, 4, depth, material, (x1 + x2) / 2, 2, (z1 + z2) / 2);
+      addEdges(mesh, 0x0b1118, 0.3);
+      return mesh;
+    }
+
+    floorSlab(-160, 275, 110, 200, floorMaterials.yard);
+    floorSlab(-275, 0, -10, 110, floorMaterials.living);
+    floorSlab(0, 275, -10, 110, floorMaterials.kitchen);
+    floorSlab(-275, -95, -200, -10, floorMaterials.bed1);
+    floorSlab(-95, 85, -200, -10, floorMaterials.bed2);
+    floorSlab(85, 275, -200, -10, floorMaterials.bed3);
+
+    // warm entry runner and a subtle living-room rug
+    const entryRug = box(48, 0.35, 24, M.rugWarm, -79, 4.3, 96);
+    entryRug.castShadow = false;
+    const livingRug = box(150, 0.32, 94, M.rug, -154, 4.28, 38);
+    livingRug.castShadow = false;
+    const bedRug = box(115, 0.3, 54, M.rugWarm, 180, 4.28, -125);
+    bedRug.castShadow = false;
+
+    /* ────────────────────────────────────────────────────────────────────
+       CUTAWAY WALLS · REAR WINDOWS
+    ──────────────────────────────────────────────────────────────────── */
+    // Rear wall built from an extruded shape so the three window openings are true holes.
+    const rearShape = new THREE.Shape();
+    rearShape.moveTo(-275, 0);
+    rearShape.lineTo(275, 0);
+    rearShape.lineTo(275, 75);
+    rearShape.lineTo(-275, 75);
+    rearShape.closePath();
+
+    const windowCenters = [-170, 0, 170];
+    windowCenters.forEach((cx) => {
+      const hole = new THREE.Path();
+      hole.moveTo(cx - 34, 25);
+      hole.lineTo(cx + 34, 25);
+      hole.lineTo(cx + 34, 56);
+      hole.lineTo(cx - 34, 56);
+      hole.closePath();
+      rearShape.holes.push(hole);
+    });
+
+    const rearWall = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(rearShape, { depth: 5, bevelEnabled: false, curveSegments: 1 }),
+      M.wall,
+    );
+    rearWall.position.z = -200;
+    rearWall.castShadow = true;
+    rearWall.receiveShadow = true;
+    modelGroup.add(rearWall);
+    addEdges(rearWall, 0xa5b7c7, 0.11);
+
+    // side walls
+    const leftWall = box(5, 75, 310, M.wall, -272.5, 37.5, -45);
+    const rightWall = box(5, 75, 310, M.wall, 272.5, 37.5, -45);
+    addEdges(leftWall, 0xa5b7c7, 0.1);
+    addEdges(rightWall, 0xa5b7c7, 0.1);
+
+    // front wall with a 100 × 65 mm door opening
+    const frontLeft = box(145, 75, 5, M.wall, -202.5, 37.5, 107.5);
+    const frontRight = box(305, 75, 5, M.wall, 122.5, 37.5, 107.5);
+    const frontHeader = box(100, 10, 5, M.wall, -80, 70, 107.5);
+    addEdges(frontLeft, 0xa5b7c7, 0.1);
+    addEdges(frontRight, 0xa5b7c7, 0.1);
+
+    // window glass + frames, inset into the rear wall
+    windowCenters.forEach((cx) => {
+      const glass = box(67, 30, 1, M.glass, cx, 40.5, -197.4, modelGroup, { cast: false });
+      glass.renderOrder = 2;
+      box(72, 2.3, 7.2, M.steel, cx, 23.8, -197.5);
+      box(72, 2.3, 7.2, M.steel, cx, 57.2, -197.5);
+      box(2.3, 34, 7.2, M.steel, cx - 35.2, 40.5, -197.5);
+      box(2.3, 34, 7.2, M.steel, cx + 35.2, 40.5, -197.5);
+      box(1.4, 30, 3.2, M.steel, cx, 40.5, -196.5);
+      box(67, 1.3, 3.2, M.steel, cx, 40.5, -196.5);
+    });
+
+    // interior partitions — 70 mm cutaway height
+    const interiorHeight = 70;
+    const partitionDepth = 5;
+    const innerWallSpans = [
+      [-275, -185],
+      [-150, -50],
+      [-15, 135],
+      [170, 275],
+    ];
+    innerWallSpans.forEach(([x1, x2]) => {
+      const wall = box(x2 - x1, interiorHeight, partitionDepth, M.wallInner, (x1 + x2) / 2, interiorHeight / 2, -10);
+      addEdges(wall, 0xa5b7c7, 0.1);
+    });
+
+    // living | kitchen partition with a wide opening toward the yard
+    const kitchenPartition = box(5, interiorHeight, 80, M.wallInner, 0, interiorHeight / 2, 30);
+    addEdges(kitchenPartition, 0xa5b7c7, 0.1);
+
+    // bedroom partitions, open toward the front hall
+    const bedroomPartitions = [-95, 85];
+    bedroomPartitions.forEach((x) => {
+      const wall = box(5, interiorHeight, 160, M.wallInner, x, interiorHeight / 2, -120);
+      addEdges(wall, 0xa5b7c7, 0.1);
+    });
+
+    // small door frames at the three bedroom entries
+    [-167.5, -32.5, 152.5].forEach((x) => {
+      box(2.2, interiorHeight, 7, M.trim, x - 18, interiorHeight / 2, -10);
+      box(2.2, interiorHeight, 7, M.trim, x + 18, interiorHeight / 2, -10);
+      box(38, 2.2, 7, M.trim, x, interiorHeight - 1.1, -10);
+    });
+
+    /* ────────────────────────────────────────────────────────────────────
+       MAIN DOOR — GROUP PIVOT AT HINGE
+    ──────────────────────────────────────────────────────────────────── */
+    box(2.6, 67, 7.4, M.darkMetal, -130.6, 33.5, 107.5);
+    box(2.6, 67, 7.4, M.darkMetal, -29.4, 33.5, 107.5);
+    box(103, 2.6, 7.4, M.darkMetal, -80, 65.2, 107.5);
+    box(101, 1.1, 8.4, M.steel, -80, 0.5, 109.5);
+
+    const doorPivot = new THREE.Group();
+    doorPivot.position.set(-129.7, 0, 108.2);
+    modelGroup.add(doorPivot);
+
+    const doorLeaf = box(99, 64.2, 3.6, M.wood, 49.5, 32.1, 0, doorPivot);
+    addEdges(doorLeaf, 0x3f2c1d, 0.3);
+    box(72, 36, 1.1, M.woodDark, 49.5, 31, 1.95, doorPivot);
+    box(72, 36, 1.1, M.woodDark, 49.5, 31, -1.95, doorPivot);
+    box(4.8, 4.8, 2.4, M.steel, 88, 31, 2.8, doorPivot);
+    cylinder(2, 2, 2.2, 16, M.steel, 88, 31, 4.1, doorPivot, { rotation: [Math.PI / 2, 0, 0] });
+    box(2, 6, 1.6, M.steel, 75, 38, 2.4, doorPivot);
+
+    /* ────────────────────────────────────────────────────────────────────
+       SLIDING YARD CANOPY
+    ──────────────────────────────────────────────────────────────────── */
+    const canopy = new THREE.Group();
+    const CANOPY_PARK_X = 300;
+    const CANOPY_RAIN_X = -80;
+    canopy.position.set(CANOPY_PARK_X, 84, 154);
+    modelGroup.add(canopy);
+
+    box(236, 2, 92, M.canopyGlass, 0, 0, 0, canopy, { cast: false });
+    box(237, 2.2, 2, M.canopyFrame, 0, 0.4, -45.2, canopy);
+    box(237, 2.2, 2, M.canopyFrame, 0, 0.4, 45.2, canopy);
+    box(2, 2.2, 92, M.canopyFrame, -117.2, 0.4, 0, canopy);
+    box(2, 2.2, 92, M.canopyFrame, 117.2, 0.4, 0, canopy);
+    box(208, 0.75, 1.4, new THREE.MeshStandardMaterial({ color: 0x7dd3fc, emissive: 0x22d3ee, emissiveIntensity: 1.6, roughness: 0.3 }), 0, -1.2, 43.2, canopy, { cast: false });
+
+    /* ────────────────────────────────────────────────────────────────────
+       RAIN PARTICLE SYSTEM
+    ──────────────────────────────────────────────────────────────────── */
+    const RAIN_COUNT = 1350;
+    const rainPositions = new Float32Array(RAIN_COUNT * 3);
+    const rainSpeeds = new Float32Array(RAIN_COUNT);
+    const rainInitial = new Float32Array(RAIN_COUNT * 3);
+
+    for (let i = 0; i < RAIN_COUNT; i += 1) {
+      const x = THREE.MathUtils.randFloat(-335, 335);
+      const z = THREE.MathUtils.randFloat(108, 285);
+      const y = THREE.MathUtils.randFloat(12, 285);
+      rainPositions[i * 3] = x;
+      rainPositions[i * 3 + 1] = y;
+      rainPositions[i * 3 + 2] = z;
+      rainInitial[i * 3] = x;
+      rainInitial[i * 3 + 1] = y;
+      rainInitial[i * 3 + 2] = z;
+      rainSpeeds[i] = THREE.MathUtils.randFloat(150, 270);
+    }
+
+    const rainGeometry = new THREE.BufferGeometry();
+    rainGeometry.setAttribute('position', new THREE.BufferAttribute(rainPositions, 3));
+    const rainMaterial = new THREE.PointsMaterial({
+      color: 0x8ed8ff,
+      size: 2.2,
+      transparent: true,
+      opacity: 0,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      sizeAttenuation: true,
+    });
+    const rain = new THREE.Points(rainGeometry, rainMaterial);
+    rain.visible = false;
+    rain.renderOrder = 4;
+    scene.add(rain);
+
+    /* ────────────────────────────────────────────────────────────────────
+       FURNITURE — LIVING ROOM
+    ──────────────────────────────────────────────────────────────────── */
+    function furnitureGroup(x, z, rotationY = 0) {
+      const group = new THREE.Group();
+      group.position.set(x, 4, z);
+      group.rotation.y = rotationY;
+      modelGroup.add(group);
+      return group;
+    }
+
+    function createSofa(x, z) {
+      const g = furnitureGroup(x, z);
+      box(27, 9, 64, M.sofa, 0, 8, 0, g);
+      box(24, 7.5, 19, M.sofaLight, 2.5, 15, -20.5, g);
+      box(24, 7.5, 19, M.sofaLight, 2.5, 15, 20.5, g);
+      box(7, 22, 64, M.sofa, -14.5, 19, 0, g);
+      box(27, 15, 7, M.sofa, 0, 15, -31.5, g);
+      box(27, 15, 7, M.sofa, 0, 15, 31.5, g);
+      box(21, 1.2, 17.5, M.sofaLight, 3, 19.2, -20.5, g);
+      box(21, 1.2, 17.5, M.sofaLight, 3, 19.2, 20.5, g);
+      [-21, 21].forEach((dz) => {
+        cylinder(1.2, 1.2, 4.5, 8, M.darkMetal, -9, 2.4, dz, g);
+        cylinder(1.2, 1.2, 4.5, 8, M.darkMetal, 10, 2.4, dz, g);
+      });
+      return g;
+    }
+
+    createSofa(-245, 39);
+
+    // coffee table
+    const coffee = furnitureGroup(-181, 39);
+    box(54, 3.4, 29, M.wood, 0, 14.2, 0, coffee);
+    [-23, 23].forEach((x) => {
+      [-11, 11].forEach((z) => {
+        box(2.2, 12, 2.2, M.woodDark, x, 7.2, z, coffee);
+      });
+    });
+    cylinder(6, 6.6, 3.4, 20, M.pot, -12, 17.6, 2, coffee);
+    cylinder(7, 5, 5.5, 12, M.leaf, -12, 21.2, 2, coffee);
+
+    // media wall + screen against the kitchen partition
+    const media = furnitureGroup(-17, 39);
+    box(24, 16, 76, M.woodDark, 0, 12, 0, media);
+    box(2, 39, 66, M.black, 12.3, 36, 0, media);
+    box(1.4, 36, 62, M.screen, 13.5, 36, 0, media, { cast: false });
+    box(3, 1.6, 54, M.steel, 9.5, 28.5, 0, media);
+    box(12, 10, 8, M.pot, -1, 20, 29, media);
+
+    // simple wall clock / art
+    const art = box(1.6, 25, 34, M.woodDark, -269.1, 51, 35);
+    box(1.2, 21, 30, standard(0x8ba9b1, { roughness: 0.65 }), -268.2, 51, 35);
+
+    /* ────────────────────────────────────────────────────────────────────
+       FURNITURE — KITCHEN
+    ──────────────────────────────────────────────────────────────────── */
+    const kitchen = furnitureGroup(0, 0);
+    // L-shaped counter against right wall
+    box(29, 24, 102, M.cabinet, 256, 16, 42, kitchen);
+    box(34, 3.4, 106, M.counter, 255.5, 29.7, 42, kitchen);
+    box(23, 2, 25, M.steel, 255, 31.7, 22, kitchen);
+    box(18, 1.3, 20, M.darkMetal, 255, 32.9, 22, kitchen);
+    cylinder(1.2, 1.2, 12, 12, M.steel, 258.5, 38, 10, kitchen, { rotation: [0, 0, 0] });
+    cylinder(1, 1, 8, 12, M.steel, 254.8, 40, 10, kitchen, { rotation: [0, 0, Math.PI / 2] });
+    // cooktop
+    box(25, 1.2, 33, M.black, 255, 31.8, 68, kitchen);
+    [[249.5, 61], [260.5, 61], [249.5, 75], [260.5, 75]].forEach(([x, z]) => {
+      cylinder(4.2, 4.2, 0.8, 20, M.steel, x, 32.7, z, kitchen);
+    });
+    // upper shelves
+    box(14, 2, 94, M.wood, 266, 53, 43, kitchen);
+    box(14, 2, 94, M.wood, 266, 64, 43, kitchen);
+    for (let i = 0; i < 4; i += 1) {
+      cylinder(2.5, 2.5, 3.6, 16, M.counter, 263.5, 57, 8 + i * 18, kitchen);
+    }
+    // dining table
+    const dining = furnitureGroup(106, 61);
+    box(70, 3.6, 42, M.wood, 0, 17.5, 0, dining);
+    [-28, 28].forEach((x) => {
+      [-14, 14].forEach((z) => {
+        box(2.4, 15, 2.4, M.woodDark, x, 8, z, dining);
+      });
+    });
+    [-23, 23].forEach((x) => {
+      [-30, 30].forEach((z) => {
+        box(15, 3.2, 15, M.sofaLight, x, 12.2, z, dining);
+        box(15, 13, 2.5, M.sofa, x, 19.5, z + (z > 0 ? 6.5 : -6.5), dining);
+      });
+    });
+    cylinder(5.4, 4.8, 5, 20, M.pot, 0, 21.5, 0, dining);
+    cylinder(6.5, 4, 4, 12, M.leaf, 0, 25, 0, dining);
+
+    /* ────────────────────────────────────────────────────────────────────
+       FURNITURE — BEDROOMS
+    ──────────────────────────────────────────────────────────────────── */
+    function createBed(x, z, width, length, blanketMaterial) {
+      const g = furnitureGroup(x, z);
+      box(width, 6, length, M.woodDark, 0, 3.5, 0, g);
+      box(width - 4, 9, length - 8, M.mattress, 0, 10.5, 1.5, g);
+      box(width - 8, 2.4, length * 0.58, blanketMaterial, 0, 16.3, length * 0.16, g);
+      box(width + 5, 30, 4, M.woodDark, 0, 17, -length / 2 - 1.5, g);
+      box(width - 22, 4, 10, M.pillow, -width * 0.23, 17.3, -length / 2 + 9, g);
+      box(width - 22, 4, 10, M.pillow, width * 0.23, 17.3, -length / 2 + 9, g);
+      [-width / 2 + 4, width / 2 - 4].forEach((dx) => {
+        [-length / 2 + 5, length / 2 - 5].forEach((dz) => {
+          box(2, 4, 2, M.steel, dx, 1.2, dz, g);
+        });
+      });
+      return g;
+    }
+
+    createBed(-186, -142, 64, 84, standard(0x567b8d, { roughness: 0.92 }));
+    createBed(-7, -140, 58, 80, standard(0x7c6d96, { roughness: 0.92 }));
+    createBed(181, -140, 64, 84, standard(0x6b8d77, { roughness: 0.92 }));
+
+    function createNightstand(x, z) {
+      const g = furnitureGroup(x, z);
+      box(25, 20, 25, M.wood, 0, 10, 0, g);
+      box(23, 1.2, 23, M.woodDark, 0, 20.5, 0, g);
+      box(13, 1.2, 13, M.woodDark, 0, 17.8, -12.8, g);
+      cylinder(4.5, 3.5, 6, 16, M.lampShade, 0, 24, 0, g);
+      cylinder(1.4, 1.4, 3, 10, M.steel, 0, 28, 0, g);
+      return g;
+    }
+
+    createNightstand(-252, -188);
+    createNightstand(-120, -188);
+    createNightstand(51, -188);
+    createNightstand(239, -188);
+
+    // wardrobes give the bedrooms readable silhouettes
+    box(76, 48, 16, M.cabinet, -18, 28, -187);
+    box(1, 42, 14, M.steel, -18, 28, -178.8);
+    box(18, 48, 58, M.cabinet, 260, 28, -58);
+    box(1, 42, 54, M.steel, 250.8, 28, -58);
+    box(14, 14, 14, M.sofaLight, 233, 11, -154);
+    box(14, 14, 14, M.sofaLight, 267, 11, -154);
+
+    // plants
+    function plant(x, z, scale = 1) {
+      const g = furnitureGroup(x, z);
+      g.scale.setScalar(scale);
+      cylinder(6, 8, 10, 16, M.pot, 0, 5, 0, g);
+      const leafMaterial = M.leaf.clone();
+      leafMaterial.color.setHex(0x4a8a68);
+      [[0, 15, 0, 7], [5, 20, 2, 5.5], [-5, 21, -2, 5], [1, 26, 0, 4.4]].forEach(([x1, y1, z1, s]) => {
+        const leaf = new THREE.Mesh(new THREE.IcosahedronGeometry(s, 1), leafMaterial);
+        leaf.position.set(x1, y1, z1);
+        leaf.castShadow = true;
+        leaf.receiveShadow = true;
+        g.add(leaf);
+      });
+      return g;
+    }
+    plant(-264, 91, 0.92);
+    plant(27, 98, 0.82);
+    plant(264, 96, 0.92);
+    plant(-261, -28, 0.8);
+
+    /* ────────────────────────────────────────────────────────────────────
+       PENDANT LAMPS
+    ──────────────────────────────────────────────────────────────────── */
+    const lampBulbMat = new THREE.MeshStandardMaterial({
+      color: 0xffefc2,
+      emissive: 0xffbd5f,
+      emissiveIntensity: 0.12,
+      roughness: 0.35,
+    });
+
+    function createPendant(x, z, cordTop = 74, shadeY = 57, radius = 11) {
+      const g = new THREE.Group();
+      g.position.set(x, 0, z);
+      modelGroup.add(g);
+      cylinder(0.7, 0.7, cordTop - shadeY, 8, M.darkMetal, 0, (cordTop + shadeY) / 2, 0, g);
+      const shade = new THREE.Mesh(
+        new THREE.CylinderGeometry(radius * 0.32, radius, radius * 0.9, 28, 1, true),
+        M.lampShade,
+      );
+      shade.position.y = shadeY;
+      shade.castShadow = true;
+      g.add(shade);
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(radius * 0.35, 18, 12), lampBulbMat);
+      bulb.position.y = shadeY - 2.6;
+      g.add(bulb);
+      return g;
+    }
+
+    createPendant(-174, 38, 74, 57, 11);
+    createPendant(-184, -138, 72, 54, 9);
+    createPendant(107, 61, 70, 55, 9);
+
+    /* ────────────────────────────────────────────────────────────────────
+       SENSORS + ACTUATORS
+    ──────────────────────────────────────────────────────────────────── */
+    // DHT22 on the living-room wall
+    const dhtGroup = new THREE.Group();
+    dhtGroup.position.set(-269, 44, 64);
+    modelGroup.add(dhtGroup);
+    box(4.5, 13, 9, standard(0xe8e5dc, { roughness: 0.82 }), 0, 0, 0, dhtGroup);
+    for (let i = 0; i < 4; i += 1) {
+      box(0.6, 0.8, 5.5, M.darkMetal, 2.4, 3.5 - i * 2.2, 0, dhtGroup);
+    }
+    const dhtLed = cylinder(1, 1, 0.7, 10, ledGreenMat, 2.4, -4.2, 2.5, dhtGroup, { rotation: [0, 0, Math.PI / 2] });
+
+    // MQ-2 on the kitchen ceiling
+    const mq2Group = new THREE.Group();
+    mq2Group.position.set(162, 70, 18);
+    modelGroup.add(mq2Group);
+    cylinder(9, 9, 3.2, 24, M.darkMetal, 0, 0, 0, mq2Group);
+    cylinder(7.4, 7.4, 1.2, 24, M.steel, 0, -2.1, 0, mq2Group);
+    for (let i = 0; i < 6; i += 1) {
+      box(1.1, 0.7, 8.5, M.steel, 0, -2.9, 0, mq2Group, { cast: false }).rotation.y = (i / 6) * Math.PI;
+    }
+    const mq2LedMat = new THREE.MeshStandardMaterial({ color: 0x54ff8d, emissive: 0x28ff72, emissiveIntensity: 2, roughness: 0.3 });
+    box(2.2, 0.8, 2.2, mq2LedMat, 6.1, -2.8, 0, mq2Group);
+
+    // PIR at the entry, facing the room
+    const pirGroup = new THREE.Group();
+    pirGroup.position.set(-48, 56, 104.4);
+    modelGroup.add(pirGroup);
+    box(10, 15, 4, standard(0xece9e1, { roughness: 0.84 }), 0, 0, 0, pirGroup);
+    const pirDome = new THREE.Mesh(
+      new THREE.SphereGeometry(5.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+      standard(0xdde4e5, { roughness: 0.35, transparent: true, opacity: 0.78 }),
+    );
+    pirDome.position.set(0, 1.5, -2.3);
+    pirDome.rotation.x = -Math.PI / 2;
+    pirGroup.add(pirDome);
+    const pirLedMat = new THREE.MeshStandardMaterial({ color: 0x3f3f46, emissive: 0x000000, emissiveIntensity: 0, roughness: 0.4 });
+    box(1.6, 1.6, 0.8, pirLedMat, 0, -5.6, -2.4, pirGroup);
+
+    // RFID reader outside the main door
+    const rfidGroup = new THREE.Group();
+    rfidGroup.position.set(-149, 40, 112.3);
+    modelGroup.add(rfidGroup);
+    box(15, 21, 4, M.black, 0, 0, 0, rfidGroup);
+    box(11, 13, 1.2, standard(0x101b26, { roughness: 0.25, metalness: 0.4 }), 0, 0, 2.3, rfidGroup);
+    const rfidLedMat = new THREE.MeshStandardMaterial({ color: 0x2dd4bf, emissive: 0x22d3ee, emissiveIntensity: 1.4, roughness: 0.25 });
+    box(3.4, 1.3, 0.7, rfidLedMat, 5.2, -7.7, 2.8, rfidGroup);
+
+    // Security beacon on top of the front wall
+    const beaconGroup = new THREE.Group();
+    beaconGroup.position.set(198, 77, 107.5);
+    modelGroup.add(beaconGroup);
+    cylinder(6.5, 7.2, 3.5, 24, M.darkMetal, 0, 0, 0, beaconGroup);
+    const beaconDomeMat = new THREE.MeshStandardMaterial({
+      color: 0x63141d,
+      emissive: 0xff243d,
+      emissiveIntensity: 0.15,
+      roughness: 0.22,
+      transparent: true,
+      opacity: 0.92,
+    });
+    const beaconDome = new THREE.Mesh(
+      new THREE.SphereGeometry(5.2, 20, 12, 0, Math.PI * 2, 0, Math.PI / 2),
+      beaconDomeMat,
+    );
+    beaconDome.position.y = 2.4;
+    beaconGroup.add(beaconDome);
+
+    // DC exhaust fan on the kitchen side of the back partition
+    const fanGroup = new THREE.Group();
+    fanGroup.position.set(207, 55, -6.4);
+    modelGroup.add(fanGroup);
+    const fanHousing = cylinder(15, 15, 6.4, 32, M.darkMetal, 0, 0, 0, fanGroup, { rotation: [Math.PI / 2, 0, 0] });
+    const fanBladeGroup = new THREE.Group();
+    fanBladeGroup.position.set(0, 0, 2.5);
+    fanGroup.add(fanBladeGroup);
+    for (let i = 0; i < 4; i += 1) {
+      const blade = box(2.5, 11, 1.2, M.steel, 0, 5.4, 0, fanBladeGroup);
+      blade.rotation.z = (i / 4) * Math.PI * 2 + 0.2;
+    }
+    cylinder(3.4, 3.4, 3.2, 20, M.steel, 0, 0, 3.1, fanGroup, { rotation: [Math.PI / 2, 0, 0] });
+    const grille1 = new THREE.Mesh(new THREE.TorusGeometry(11.5, 0.55, 8, 36), M.steel);
+    grille1.position.z = 4.1;
+    fanGroup.add(grille1);
+    const grille2 = new THREE.Mesh(new THREE.TorusGeometry(7.4, 0.4, 8, 32), M.steel);
+    grille2.position.z = 4.1;
+    fanGroup.add(grille2);
+    box(2.2, 2.2, 4.8, M.darkMetal, 0, 15.6, 0, fanGroup);
+
+    /* ────────────────────────────────────────────────────────────────────
+       CSS2D LABELS
+    ──────────────────────────────────────────────────────────────────── */
+    const sceneLabelObjects = [];
+
+    function addLabel(text, x, y, z, type = 'room') {
+      const el = document.createElement('div');
+      el.className = `scene-label ${type}`;
+      el.textContent = text;
+      const label = new CSS2DObject(el);
+      label.position.set(x, y, z);
+      label.center.set(0.5, 0.5);
+      labelsGroup.add(label);
+      sceneLabelObjects.push(label);
+      return label;
+    }
+
+    addLabel('SÂN TRƯỚC', 118, 16, 154);
+    addLabel('PHÒNG KHÁCH', -145, 8, 78);
+    addLabel('BẾP', 138, 17, 46);
+    addLabel('PHÒNG NGỦ 1', -186, 22, -62);
+    addLabel('PHÒNG NGỦ 2', -7, 22, -62);
+    addLabel('PHÒNG NGỦ 3', 176, 18, -150);
+    addLabel('ESP32 · 4 RELAY', -236, 12, 155, 'sensor');
+    addLabel('DHT22', -256, 54, 64, 'sensor');
+    addLabel('MQ-2', 162, 81, 18, 'sensor');
+    addLabel('PIR', -18, 92, 94, 'sensor');
+    addLabel('RFID RC522', -158, 76, 122, 'sensor');
+    addLabel('QUẠT HÚT DC', 232, 70, 8, 'sensor');
+
+    /* ────────────────────────────────────────────────────────────────────
+       SCENARIO CONTROLS
+    ──────────────────────────────────────────────────────────────────── */
+    const scenarioButtons = Object.fromEntries(
+      $$('[data-scenario]').map((button) => [button.dataset.scenario, button]),
+    );
+
+    function setScenarioButton(name, active, stateText, alarm = false) {
+      const button = scenarioButtons[name];
+      if (!button) return;
+      button.classList.toggle('is-active', active);
+      button.classList.toggle('is-alarm', alarm);
+      button.setAttribute('aria-pressed', String(active));
+      const stateEl = $('.scenario-state', button);
+      if (stateEl) stateEl.textContent = stateText;
+    }
+
+    function updateScenarioUI() {
+      const doorActive = door.phase !== 'closed';
+      setScenarioButton('rfid', doorActive, door.phase === 'held' ? 'OPEN' : doorActive ? 'SCAN' : 'READY');
+      setScenarioButton('rain', state.rain, state.rain ? 'ON' : 'OFF');
+      setScenarioButton('gas', state.gas, state.gas ? 'LEAK' : 'SAFE', state.gas);
+      setScenarioButton('security', state.armed, state.armed ? (state.motion ? 'MOTION' : 'ARMED') : 'DISARMED', state.armed && state.motion);
+      setScenarioButton('lights', state.lights, state.lights ? 'ON' : 'OFF');
+      setScenarioButton('fan', state.fan || state.gas, state.fan ? 'ON' : state.gas ? 'AUTO' : 'OFF');
+    }
+
+    function updateAlarmUI() {
+      const gasAlarm = state.gas;
+      const securityAlarm = state.armed && state.motion;
+      const active = gasAlarm || securityAlarm;
+
+      alarmVignette.classList.toggle('is-on', active);
+      alarmBanner.classList.toggle('is-on', active);
+      if (gasAlarm) {
+        alarmText.textContent = 'Cảnh báo rò rỉ gas · quạt hút và còi đang chạy';
+      } else if (securityAlarm) {
+        alarmText.textContent = 'Phát hiện chuyển động · chế độ an ninh đang bật';
+      }
+    }
+
+    function triggerRfid() {
+      ensureAudio();
+      rfidChime();
+      door.phase = 'opening';
+      door.target = -Math.PI / 2;
+      door.holdAt = 0;
+      rfidFlashUntil = performance.now() + 2800;
+      showToast('RFID hợp lệ', 'Cửa chính mở trong 5 giây rồi tự đóng.', 'info');
+      announce('RFID hợp lệ. Cửa chính đang mở.');
+    }
+
+    function toggleScenario(name) {
+      ensureAudio();
+
+      if (name === 'rfid') {
+        triggerRfid();
+        return;
+      }
+
+      if (name === 'rain') {
+        state.rain = !state.rain;
+        showToast(state.rain ? 'Kích hoạt mưa' : 'Tạnh mưa', state.rain ? 'Mái che trượt ra, hệ thống làm mát tạm dừng.' : 'Mái che thu về, sân trước trở lại trạng thái khô.', 'info');
+        announce(state.rain ? 'Đã bật mô phỏng mưa. Mái che đang mở.' : 'Đã tắt mưa. Mái che đang thu về.');
+      } else if (name === 'gas') {
+        state.gas = !state.gas;
+        if (state.gas) {
+          lastGasBeepAt = performance.now();
+          gasAlarmSound();
+          showToast('Rò rỉ gas', 'MQ-2 vượt ngưỡng · quạt hút và còi báo đã bật.', 'alert');
+          announce('Cảnh báo rò rỉ gas. Quạt hút và còi báo đang hoạt động.');
+        } else {
+          showToast('Đã xử lý gas', 'Nồng độ khí trở về ngưỡng an toàn.', 'info');
+          announce('Đã tắt cảnh báo rò rỉ gas.');
+        }
+      } else if (name === 'security') {
+        state.armed = !state.armed;
+        if (state.armed) {
+          const now = performance.now();
+          motionUntil = now + 2600;
+          nextMotionAt = now + 7000;
+          securityChirp();
+          showToast('An ninh đã bật', 'PIR đang giám sát · beacon cảnh báo sẵn sàng.', 'info');
+          announce('Đã bật chế độ an ninh. PIR đang giám sát.');
+        } else {
+          motionUntil = 0;
+          state.motion = false;
+          showToast('An ninh đã tắt', 'PIR và beacon đã dừng giám sát.', 'info');
+          announce('Đã tắt chế độ an ninh.');
+        }
+      } else if (name === 'lights') {
+        state.lights = !state.lights;
+        showToast(state.lights ? 'Đèn đã bật' : 'Đèn đã tắt', state.lights ? 'Relay 1 cấp nguồn cho phòng khách và phòng ngủ.' : 'Relay 1 ngắt nguồn chiếu sáng.', 'info');
+        announce(state.lights ? 'Đã bật đèn phòng khách và phòng ngủ.' : 'Đã tắt đèn.');
+      } else if (name === 'fan') {
+        state.fan = !state.fan;
+        if (state.gas && !state.fan) {
+          showToast('Quạt hút vẫn chạy', 'Relay 2 đang ở chế độ tự động do cảnh báo gas.', 'alert');
+          announce('Quạt hút vẫn chạy tự động do cảnh báo gas.');
+        } else {
+          showToast(state.fan ? 'Quạt hút đã bật' : 'Quạt hút đã tắt', state.fan ? 'Relay 2 đóng · quạt DC chạy 100%.' : 'Relay 2 mở · quạt DC dừng.', 'info');
+          announce(state.fan ? 'Đã bật quạt hút.' : 'Đã tắt quạt hút.');
+        }
+      }
+
+      updateScenarioUI();
+      updateAlarmUI();
+    }
+
+    $$('[data-scenario]').forEach((button) => {
+      button.addEventListener('click', () => toggleScenario(button.dataset.scenario));
+    });
+
+    /* ────────────────────────────────────────────────────────────────────
+       LIVE DATASTREAM VALUES
+    ──────────────────────────────────────────────────────────────────── */
+    function streamStatus(stream, value) {
+      switch (stream.id) {
+        case 'V0': return value > 31 ? 'HƠI ẤM' : value < 24 ? 'MÁT' : 'ỔN ĐỊNH';
+        case 'V1': return value > 75 ? 'ĐỘ ẨM CAO' : value < 40 ? 'KHÔ' : 'ẨM VỪA';
+        case 'V2': return state.gas ? 'NGUY HIỂM' : 'AN TOÀN';
+        case 'V3': return state.lights ? 'ĐỦ SÁNG' : 'ÁNH SÁNG DỊU';
+        case 'V4': return value > 0.5 ? 'MƯA' : 'KHÔ';
+        case 'V5': return value > 0.5 ? 'CHUYỂN ĐỘNG' : 'AN TOÀN';
+        case 'V6': return value > 0.5 ? 'HÚ CÒI' : 'TẮT';
+        case 'V7': return value > 0.5 ? 'ON' : 'OFF';
+        case 'V8': return value > 0.5 ? 'MỞ' : 'ĐÓNG';
+        case 'V9': return value > 0.5 ? 'ON' : 'OFF';
+        default: return 'ĐỒNG BỘ';
+      }
+    }
+
+    function updateStreamValues(dt, now) {
+      const t = (now - startedAt) / 1000;
+      const targets = {
+        V0: 27.2 + Math.sin(t * 0.26) * 0.42 + (state.rain ? -0.5 : 0),
+        V1: 59.5 + Math.sin(t * 0.19) * 2.7 + (state.rain ? 6.5 : 0),
+        V2: state.gas ? 762 + Math.sin(t * 4.1) * 38 : 138 + Math.sin(t * 0.78) * 13,
+        V3: state.lights ? 780 + Math.sin(t * 1.8) * 26 : 302 + Math.sin(t * 0.56) * 22,
+        V4: state.rain ? 1 : 0,
+        V5: state.armed && state.motion ? 1 : 0,
+        V6: state.gas ? 1 : 0,
+        V7: state.lights ? 1 : 0,
+        V8: door.phase !== 'closed' ? 1 : 0,
+        V9: state.fan || state.gas ? 1 : 0,
+      };
+
+      STREAMS.forEach((stream) => {
+        sim[stream.id] = damp(sim[stream.id], targets[stream.id], stream.digital ? 9 : 3.6, dt);
+      });
+    }
+
+    function renderStreamValues() {
+      STREAMS.forEach((stream) => {
+        const el = streamEls[stream.id];
+        const value = sim[stream.id];
+        const digital = Boolean(stream.digital);
+        const on = digital ? value > 0.5 : false;
+        const isAlert = (stream.id === 'V2' && state.gas)
+          || (stream.id === 'V5' && state.motion)
+          || (stream.id === 'V6' && state.gas);
+
+        el.card.classList.toggle('is-on', on);
+        el.card.classList.toggle('is-alert', isAlert);
+        el.value.textContent = digital ? (on ? '1' : '0') : fmt(value, stream.decimals);
+        el.bar.style.width = `${clamp(digital ? value * 100 : (value / stream.max) * 100, 0, 100)}%`;
+        el.status.textContent = streamStatus(stream, value);
+        el.card.setAttribute(
+          'aria-label',
+          `${stream.label}, ${stream.sensor}: ${digital ? (on ? '1, bật' : '0, tắt') : `${fmt(value, stream.decimals)} ${stream.unit}`}, ${streamStatus(stream, value)}`,
+        );
+      });
+    }
+
+    /* ────────────────────────────────────────────────────────────────────
+       RESIZE · CAMERA RESET
+    ──────────────────────────────────────────────────────────────────── */
+    function resize() {
+      const width = Math.max(1, container.clientWidth);
+      const height = Math.max(1, container.clientHeight);
+      canvasSize.width = width;
+      canvasSize.height = height;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      renderer.setSize(width, height);
+      labelRenderer.setSize(width, height);
+    }
+
+    function resetCamera() {
+      camera.position.copy(homePosition());
+      controls.target.set(0, 18, 0);
+      controls.update();
+    }
+
+    const resizeObserver = new ResizeObserver(resize);
+    resizeObserver.observe(container);
+    window.addEventListener('resize', resize);
+
+    /* ────────────────────────────────────────────────────────────────────
+       OVERLAY CONTROLS
+    ──────────────────────────────────────────────────────────────────── */
+    const labelsButton = $('#btn-labels');
+    const wireframeButton = $('#btn-wireframe');
+    const soundButton = $('#btn-sound');
+
+    labelsButton.addEventListener('click', () => {
+      const visible = !labelsGroup.visible;
+      labelsGroup.visible = visible;
+      sceneLabelObjects.forEach((label) => { label.visible = visible; });
+      labelsButton.classList.toggle('is-active', visible);
+      labelsButton.setAttribute('aria-pressed', String(visible));
+      announce(visible ? 'Đã hiện nhãn mô hình.' : 'Đã ẩn nhãn mô hình.');
+    });
+
+    function setWireframe(enabled) {
+      state.wireframe = enabled;
+      modelGroup.traverse((object) => {
+        if (!object.isMesh) return;
+        const materials = Array.isArray(object.material) ? object.material : [object.material];
+        materials.forEach((material) => {
+          if (material && 'wireframe' in material) material.wireframe = enabled;
+        });
+      });
+      wireframeButton.classList.toggle('is-active', enabled);
+      wireframeButton.setAttribute('aria-pressed', String(enabled));
+    }
+
+    wireframeButton.addEventListener('click', () => {
+      setWireframe(!state.wireframe);
+      announce(state.wireframe ? 'Đã bật chế độ wireframe.' : 'Đã tắt chế độ wireframe.');
+    });
+
+    soundButton.addEventListener('click', () => {
+      state.sound = !state.sound;
+      soundButton.classList.toggle('is-active', state.sound);
+      soundButton.classList.toggle('is-muted', !state.sound);
+      soundButton.setAttribute('aria-pressed', String(state.sound));
+      if (state.sound) {
+        const ctx = ensureAudio();
+        if (ctx) tone(660, ctx.currentTime, 0.06, 0.02, 'sine');
+      }
+      announce(state.sound ? 'Đã bật âm thanh cảnh báo.' : 'Đã tắt âm thanh cảnh báo.');
+    });
+
+    $('#btn-reset').addEventListener('click', () => {
+      resetCamera();
+      announce('Đã đưa camera về góc nhìn mặc định.');
+    });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+      if (event.key.toLowerCase() === 'r') {
+        resetCamera();
+      } else if (event.key.toLowerCase() === 'l') {
+        labelsButton.click();
+      } else if (event.key.toLowerCase() === 'w') {
+        wireframeButton.click();
+      }
+    });
+
+    /* ────────────────────────────────────────────────────────────────────
+       ANIMATION LOOP
+    ──────────────────────────────────────────────────────────────────── */
+    let alarmMix = 0;
+    let fanSpeed = 0;
+    let firstFrame = true;
+
+    const fpsEl = $('#fps');
+    const panelFpsEl = $('#panel-fps');
+    const clockEl = $('#clock');
+    const uptimeEl = $('#uptime');
+    const loader = $('#loader');
+
+    function pad(value) {
+      return String(value).padStart(2, '0');
+    }
+
+    function formatDuration(ms) {
+      const total = Math.floor(ms / 1000);
+      const h = Math.floor(total / 3600);
+      const m = Math.floor((total % 3600) / 60);
+      const s = total % 60;
+      return `${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+
+    function updateClockAndStats(now) {
+      if (now - lastClockUpdate < 1000) return;
+      lastClockUpdate = now;
+      const date = new Date();
+      clockEl.textContent = `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+      uptimeEl.textContent = formatDuration(now - startedAt);
+    }
+
+    function updateScene(dt, now) {
+      /* Door hinge state machine — 90° open, hold 5 s, then close. */
+      door.angle = damp(door.angle, door.target, 5.8, dt);
+      if (door.phase === 'opening' && door.angle < -1.42) {
+        door.phase = 'held';
+        door.holdAt = now;
+      } else if (door.phase === 'held' && now - door.holdAt > 5000) {
+        door.phase = 'closing';
+        door.target = 0;
+      } else if (door.phase === 'closing' && door.angle > -0.025) {
+        door.angle = 0;
+        door.target = 0;
+        door.phase = 'closed';
+      }
+      doorPivot.rotation.y = door.angle;
+
+      /* Canopy slides horizontally when rain is active. */
+      canopy.position.x = damp(canopy.position.x, state.rain ? CANOPY_RAIN_X : CANOPY_PARK_X, 2.1, dt);
+      // On phones the parked canopy sits at the edge of the frame; hide it when fully retracted.
+      canopy.visible = window.innerWidth >= 640 || state.rain || canopy.position.x < CANOPY_PARK_X - 4;
+
+      /* Rain particles. */
+      rainMaterial.opacity = damp(rainMaterial.opacity, state.rain ? 0.72 : 0, 2.6, dt);
+      rain.visible = rainMaterial.opacity > 0.012;
+      if (rain.visible) {
+        const positions = rainGeometry.attributes.position.array;
+        const canopyDeployed = state.rain && canopy.position.x < 240;
+        const canopyMinX = canopy.position.x - 118;
+        const canopyMaxX = canopy.position.x + 118;
+        for (let i = 0; i < RAIN_COUNT; i += 1) {
+          const index = i * 3;
+          positions[index + 1] -= rainSpeeds[i] * dt;
+          positions[index] += 7.5 * dt;
+
+          let reset = positions[index + 1] < 7 || positions[index] > 342;
+          if (canopyDeployed && positions[index + 1] < 83.5) {
+            const insideCanopy = positions[index] > canopyMinX && positions[index] < canopyMaxX
+              && positions[index + 2] > 108 && positions[index + 2] < 200;
+            if (insideCanopy) reset = true;
+          }
+
+          if (reset) {
+            positions[index] = THREE.MathUtils.randFloat(-335, 335);
+            positions[index + 1] = THREE.MathUtils.randFloat(220, 295);
+            positions[index + 2] = THREE.MathUtils.randFloat(108, 285);
+          }
+        }
+        rainGeometry.attributes.position.needsUpdate = true;
+      }
+
+      /* Ambient alarm mix. */
+      alarmMix = damp(alarmMix, state.gas ? 1 : 0, 2.6, dt);
+      ambient.color.copy(baseAmbientColor).lerp(alarmAmbientColor, alarmMix * 0.95);
+      ambient.intensity = 0.9 + alarmMix * (0.28 + (Math.sin(now * 0.009) * 0.5 + 0.5) * 0.3);
+
+      /* Relays → living/bedroom lights. PointLight intensity is intentionally 0…1. */
+      livingLight.intensity = damp(livingLight.intensity, state.lights ? 1 : 0, 3.8, dt);
+      bedroomLight.intensity = damp(bedroomLight.intensity, state.lights ? 0.78 : 0, 3.8, dt);
+      lampBulbMat.emissiveIntensity = damp(lampBulbMat.emissiveIntensity, state.lights ? 5.2 : 0.12, 4.2, dt);
+      M.lampShade.emissiveIntensity = damp(M.lampShade.emissiveIntensity, state.lights ? 1.25 : 0.2, 4, dt);
+
+      /* Exhaust fan spins while gas is present, or when manually switched. */
+      const fanTarget = state.gas ? 12.5 : state.fan ? 6.4 : 0;
+      fanSpeed = damp(fanSpeed, fanTarget, 2.6, dt);
+      fanBladeGroup.rotation.z += fanSpeed * dt;
+
+      /* PIR-backed security loop. */
+      if (state.armed && now >= nextMotionAt) {
+        nextMotionAt = now + 7200;
+        motionUntil = now + 2200;
+        securityChirp();
+      }
+      state.motion = state.armed && now < motionUntil;
+
+      const securityPulse = state.motion
+        ? 1.9 + (Math.sin(now * 0.026) * 0.5 + 0.5) * 2.1
+        : 0.42;
+      securityLight.intensity = damp(securityLight.intensity, state.armed ? securityPulse : 0, 5, dt);
+      securityLight.color.setHex(Math.sin(now * 0.02) > 0 ? 0xff243d : 0x3b82f6);
+      beaconDomeMat.emissive.setHex(Math.sin(now * 0.02) > 0 ? 0xff243d : 0x2563eb);
+      beaconDomeMat.emissiveIntensity = state.armed
+        ? (state.motion ? 3.6 + Math.sin(now * 0.03) * 1.4 : 0.8)
+        : 0.12;
+
+      /* Indicator LEDs. */
+      mq2LedMat.color.setHex(state.gas ? 0xff4f64 : 0x55ff92);
+      mq2LedMat.emissive.setHex(state.gas ? 0xff2440 : 0x28ff72);
+      mq2LedMat.emissiveIntensity = state.gas ? 2.8 + Math.sin(now * 0.018) * 1.2 : 1.6;
+
+      pirLedMat.emissive.setHex(state.motion ? 0xff304f : 0x000000);
+      pirLedMat.emissiveIntensity = state.motion ? 2.8 : 0;
+
+      rfidLedMat.emissiveIntensity = now < rfidFlashUntil
+        ? 2.5 + (Math.sin(now * 0.03) * 0.5 + 0.5) * 2.2
+        : 1.0;
+
+      /* Gas buzzer: two-tone beep every ~1 second. */
+      if (state.gas && state.sound && audioCtx && audioCtx.state === 'running' && now - lastGasBeepAt > 1050) {
+        gasAlarmSound();
+        lastGasBeepAt = now;
+      }
+    }
+
+    function animate(now) {
+      requestAnimationFrame(animate);
+      const dt = Math.min(clock.getDelta(), 0.08);
+
+      updateScene(dt, now);
+      updateStreamValues(dt, now);
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+
+      if (now - lastUiUpdate > 110) {
+        updateScenarioUI();
+        updateAlarmUI();
+        renderStreamValues();
+        updateClockAndStats(now);
+        lastUiUpdate = now;
+      }
+
+      fpsFrames += 1;
+      if (now - lastFpsUpdate > 1000) {
+        const fps = Math.round((fpsFrames * 1000) / (now - lastFpsUpdate));
+        fpsEl.textContent = String(fps);
+        panelFpsEl.textContent = `RENDER ${fps} FPS`;
+        fpsFrames = 0;
+        lastFpsUpdate = now;
+      }
+
+      if (firstFrame) {
+        firstFrame = false;
+        window.setTimeout(() => loader.classList.add('is-hidden'), 520);
+      }
+    }
+
+    /* ────────────────────────────────────────────────────────────────────
+       BOOT
+    ──────────────────────────────────────────────────────────────────── */
+    if (window.matchMedia('(max-width: 767px)').matches) {
+      labelsGroup.visible = false;
+      sceneLabelObjects.forEach((label) => { label.visible = false; });
+      labelsButton.classList.remove('is-active');
+      labelsButton.setAttribute('aria-pressed', 'false');
+    }
+
+    resize();
+    resetCamera();
+    updateScenarioUI();
+    updateAlarmUI();
+    updateStreamValues(0.016, performance.now());
+    renderStreamValues();
+    updateClockAndStats(performance.now());
+
+    requestAnimationFrame((now) => {
+      clock.start();
+      animate(now);
+    });
+  </script>
+  </script>
+</body>
+</html>
