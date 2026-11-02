@@ -308,6 +308,230 @@
     .scenario-btn.is-active .scenario-state { color: var(--accent); }
     .scenario-btn.is-alarm .scenario-state { color: #fecdd3; }
 
+    .test-panel {
+      border: 1px solid rgba(148, 163, 184, 0.1);
+      border-radius: 12px;
+      background: linear-gradient(150deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.008));
+      overflow: hidden;
+    }
+    .test-panel summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      list-style: none;
+      padding: 10px 11px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 180ms ease;
+    }
+    .test-panel summary::-webkit-details-marker { display: none; }
+    .test-panel summary:hover { background: rgba(255, 255, 255, 0.025); }
+    .test-summary-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #cbd5e1;
+    }
+    .test-badge {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid rgba(34, 211, 238, 0.28);
+      border-radius: 999px;
+      padding: 3px 6px;
+      background: rgba(34, 211, 238, 0.08);
+      font-family: "Fira Code", monospace;
+      font-size: 7px;
+      letter-spacing: 0.1em;
+      color: #67e8f9;
+      flex: 0 0 auto;
+    }
+    .test-status {
+      border: 1px solid rgba(148, 163, 184, 0.16);
+      border-radius: 999px;
+      padding: 3px 7px;
+      font-family: "Fira Code", monospace;
+      font-size: 7px;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      white-space: nowrap;
+      transition: color 180ms ease, border-color 180ms ease, background 180ms ease;
+    }
+    .test-status.is-manual {
+      border-color: rgba(251, 191, 36, 0.36);
+      background: rgba(251, 191, 36, 0.08);
+      color: #fbbf24;
+    }
+    .test-chevron { color: #64748b; transition: transform 180ms ease; flex: 0 0 auto; }
+    .test-panel[open] .test-chevron { transform: rotate(180deg); }
+    .test-body {
+      padding: 0 11px 11px;
+      border-top: 1px solid rgba(148, 163, 184, 0.08);
+    }
+    .test-hint {
+      margin: 9px 0 0;
+      font-size: 9px;
+      line-height: 1.45;
+      color: #64748b;
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px 12px;
+      margin-top: 10px;
+    }
+    .test-control { min-width: 0; }
+    .test-control-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+    }
+    .test-control label {
+      min-width: 0;
+      font-size: 9.5px;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .test-control label span {
+      margin-left: 4px;
+      font-family: "Fira Code", monospace;
+      font-size: 7px;
+      color: #475569;
+    }
+    .test-control output {
+      font-family: "Fira Code", monospace;
+      font-size: 8px;
+      color: #67e8f9;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+    .test-control input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      display: block;
+      width: 100%;
+      height: 16px;
+      margin: 4px 0 0;
+      background: transparent;
+      cursor: pointer;
+    }
+    .test-control input[type="range"]::-webkit-slider-runnable-track {
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(34, 211, 238, 0.42), rgba(148, 163, 184, 0.12));
+    }
+    .test-control input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 12px;
+      height: 12px;
+      margin-top: -4.5px;
+      border: 2px solid #071019;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.55);
+    }
+    .test-control input[type="range"]::-moz-range-track {
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.16);
+    }
+    .test-control input[type="range"]::-moz-range-progress {
+      height: 3px;
+      border-radius: 999px;
+      background: rgba(34, 211, 238, 0.52);
+    }
+    .test-control input[type="range"]::-moz-range-thumb {
+      width: 10px;
+      height: 10px;
+      border: 2px solid #071019;
+      border-radius: 50%;
+      background: #22d3ee;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.55);
+    }
+    .test-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      min-height: 39px;
+      padding: 7px 8px;
+      border: 1px solid rgba(148, 163, 184, 0.09);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.018);
+      cursor: pointer;
+    }
+    .test-toggle-copy { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+    .test-toggle-title {
+      font-size: 9.5px;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .test-toggle-meta {
+      font-family: "Fira Code", monospace;
+      font-size: 7px;
+      letter-spacing: 0.05em;
+      color: #475569;
+      text-transform: uppercase;
+    }
+    .test-toggle input[type="checkbox"] {
+      -webkit-appearance: none;
+      appearance: none;
+      position: relative;
+      width: 34px;
+      height: 19px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(148, 163, 184, 0.2);
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.12);
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease;
+    }
+    .test-toggle input[type="checkbox"]::after {
+      content: "";
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #94a3b8;
+      transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease;
+    }
+    .test-toggle input[type="checkbox"]:checked {
+      border-color: rgba(34, 211, 238, 0.5);
+      background: rgba(34, 211, 238, 0.2);
+    }
+    .test-toggle input[type="checkbox"]:checked::after {
+      transform: translateX(15px);
+      background: #22d3ee;
+      box-shadow: 0 0 9px rgba(34, 211, 238, 0.65);
+    }
+    .test-reset {
+      border: 1px solid rgba(34, 211, 238, 0.24);
+      border-radius: 8px;
+      padding: 5px 8px;
+      background: rgba(34, 211, 238, 0.06);
+      font-family: "Fira Code", monospace;
+      font-size: 7.5px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #67e8f9;
+      cursor: pointer;
+      transition: background 180ms ease, border-color 180ms ease, opacity 180ms ease;
+    }
+    .test-reset:hover { background: rgba(34, 211, 238, 0.12); border-color: rgba(34, 211, 238, 0.38); }
+    .test-reset:disabled { opacity: 0.34; cursor: not-allowed; }
+
     .stream-card {
       --accent: #60a5fa;
       position: relative;
@@ -900,6 +1124,80 @@
             </div>
           </section>
 
+          <!-- Sensor test -->
+          <section class="mt-6" aria-labelledby="test-heading">
+            <details id="sensor-test" class="test-panel">
+              <summary>
+                <span class="test-summary-title">
+                  <span class="test-badge">TEST</span>
+                  <span id="test-heading">Cảm biến</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <span id="test-status" class="test-status" aria-live="polite">TỰ ĐỘNG</span>
+                  <svg class="test-chevron" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="m6 9 6 6 6-6" />
+                  </svg>
+                </span>
+              </summary>
+              <div class="test-body">
+                <p class="test-hint">Kéo để ghi đè V0–V5. V2 ≥ 1200 kích hoạt báo gas; V4 điều khiển mái che; V5 kích hoạt PIR/an ninh. V0, V1, V3 cập nhật hiển thị.</p>
+                <div class="test-grid">
+                  <div class="test-control">
+                    <div class="test-control-head">
+                      <label for="test-v0">Nhiệt độ <span>V0</span></label>
+                      <output id="test-v0-out" for="test-v0">27.2 °C</output>
+                    </div>
+                    <input id="test-v0" type="range" min="0" max="50" step="0.1" value="27.2" />
+                  </div>
+
+                  <div class="test-control">
+                    <div class="test-control-head">
+                      <label for="test-v1">Độ ẩm <span>V1</span></label>
+                      <output id="test-v1-out" for="test-v1">61 %</output>
+                    </div>
+                    <input id="test-v1" type="range" min="0" max="100" step="1" value="61" />
+                  </div>
+
+                  <div class="test-control">
+                    <div class="test-control-head">
+                      <label for="test-v2">Khí gas <span>V2</span></label>
+                      <output id="test-v2-out" for="test-v2">320 ADC</output>
+                    </div>
+                    <input id="test-v2" type="range" min="0" max="4095" step="10" value="320" />
+                  </div>
+
+                  <div class="test-control">
+                    <div class="test-control-head">
+                      <label for="test-v3">Ánh sáng <span>V3</span></label>
+                      <output id="test-v3-out" for="test-v3">18 lx</output>
+                    </div>
+                    <input id="test-v3" type="range" min="0" max="2000" step="10" value="18" />
+                  </div>
+
+                  <label class="test-toggle" for="test-v4">
+                    <span class="test-toggle-copy">
+                      <span class="test-toggle-title">Mưa / mái che</span>
+                      <span class="test-toggle-meta">V4 · LM393</span>
+                    </span>
+                    <input id="test-v4" type="checkbox" />
+                  </label>
+
+                  <label class="test-toggle" for="test-v5">
+                    <span class="test-toggle-copy">
+                      <span class="test-toggle-title">Có người / PIR</span>
+                      <span class="test-toggle-meta">V5 · HC-SR501</span>
+                    </span>
+                    <input id="test-v5" type="checkbox" />
+                  </label>
+                </div>
+                <div class="mt-3 flex items-center justify-between gap-2">
+                  <span class="font-mono text-[7px] uppercase tracking-[0.08em] text-slate-600">Ghi đè V0–V5</span>
+                  <button id="test-reset" type="button" class="test-reset" disabled>Về mô phỏng</button>
+                </div>
+              </div>
+            </details>
+          </section>
+
           <!-- Datastreams -->
           <section class="mt-6" aria-labelledby="streams-heading">
             <div class="section-kicker">
@@ -918,7 +1216,7 @@
 
         <footer class="panel-footer shrink-0 px-5 py-3">
           <div class="flex items-center justify-between gap-3 font-mono text-[8px] uppercase tracking-[0.1em] text-slate-500">
-            <span class="flex items-center gap-1.5"><span class="live-dot"></span> Simulation mode</span>
+            <span class="flex items-center gap-1.5"><span class="live-dot"></span> <span id="panel-mode">Simulation mode</span></span>
             <span id="panel-fps">RENDER 60 FPS</span>
             <span class="text-slate-600">v1.0</span>
           </div>
@@ -1042,6 +1340,15 @@
     };
 
     const sim = { V0: 27.4, V1: 61.5, V2: 320, V3: 18, V4: 0, V5: 0, V6: 0, V7: 0, V8: 0, V9: 0 };
+    const sensorTest = {
+      manual: false,
+      V0: 27.4,
+      V1: 61.5,
+      V2: 320,
+      V3: 18,
+      V4: 0,
+      V5: 0,
+    };
     const startedAt = performance.now();
     const baseAmbientColor = new THREE.Color(0xa9c8e8);
     const alarmAmbientColor = new THREE.Color(0xff2d2d);
@@ -1970,6 +2277,112 @@
       }
     }
 
+    /* ────────────────────────────────────────────────────────────────────
+       MANUAL SENSOR TEST
+    ──────────────────────────────────────────────────────────────────── */
+    const TEST_INPUTS = {
+      V0: { input: $('#test-v0'), output: $('#test-v0-out'), format: (v) => `${v.toFixed(1)} °C` },
+      V1: { input: $('#test-v1'), output: $('#test-v1-out'), format: (v) => `${Math.round(v)} %` },
+      V2: { input: $('#test-v2'), output: $('#test-v2-out'), format: (v) => `${Math.round(v)} ADC` },
+      V3: { input: $('#test-v3'), output: $('#test-v3-out'), format: (v) => `${Math.round(v)} lx` },
+      V4: { input: $('#test-v4'), output: null },
+      V5: { input: $('#test-v5'), output: null },
+    };
+    const testStatusEl = $('#test-status');
+    const testResetButton = $('#test-reset');
+    const panelModeEl = $('#panel-mode');
+
+    function renderTestControls() {
+      Object.entries(TEST_INPUTS).forEach(([id, control]) => {
+        const value = sensorTest[id];
+        if (control.output) control.output.textContent = control.format(Number(value));
+        if (control.input.type === 'checkbox') {
+          control.input.checked = value > 0.5;
+        } else {
+          control.input.value = String(value);
+        }
+      });
+      const statusText = sensorTest.manual ? 'THỦ CÔNG' : 'TỰ ĐỘNG';
+      if (testStatusEl.textContent !== statusText) testStatusEl.textContent = statusText;
+      testStatusEl.classList.toggle('is-manual', sensorTest.manual);
+      testResetButton.disabled = !sensorTest.manual;
+      const modeText = sensorTest.manual ? 'Manual sensor test' : 'Simulation mode';
+      if (panelModeEl && panelModeEl.textContent !== modeText) panelModeEl.textContent = modeText;
+    }
+
+    function syncTestControlsFromSim() {
+      if (sensorTest.manual) return;
+      sensorTest.V0 = sim.V0;
+      sensorTest.V1 = sim.V1;
+      sensorTest.V2 = sim.V2;
+      sensorTest.V3 = sim.V3;
+      sensorTest.V4 = state.rain ? 1 : 0;
+      sensorTest.V5 = state.motion ? 1 : 0;
+      renderTestControls();
+    }
+
+    function applySensorTest(id, rawValue) {
+      ensureAudio();
+      const value = Number(rawValue);
+      sensorTest[id] = value;
+      sensorTest.manual = true;
+
+      if (id === 'V2') {
+        const wasGas = state.gas;
+        state.gas = value >= 1200;
+        if (state.gas && !wasGas) {
+          lastGasBeepAt = performance.now();
+          gasAlarmSound();
+          showToast('Test gas vượt ngưỡng', 'MQ-2 ≥ 1200 ADC · quạt hút và còi báo đã bật.', 'alert');
+          announce('Test cảm biến gas vượt ngưỡng. Quạt hút và còi báo đang hoạt động.');
+        } else if (!state.gas && wasGas) {
+          showToast('Test gas an toàn', 'MQ-2 trở về dưới ngưỡng 1200 ADC.', 'info');
+          announce('Test cảm biến gas trở về ngưỡng an toàn.');
+        }
+      } else if (id === 'V4') {
+        const wasRain = state.rain;
+        state.rain = value > 0.5;
+        if (state.rain !== wasRain) {
+          showToast(state.rain ? 'Test trời mưa' : 'Test tạnh mưa', state.rain ? 'Mái che đang trượt ra.' : 'Mái che đang thu về.', 'info');
+          announce(state.rain ? 'Test cảm biến mưa đang bật.' : 'Test cảm biến mưa đang tắt.');
+        }
+      } else if (id === 'V5') {
+        const wasMotion = state.motion;
+        state.motion = value > 0.5;
+        if (state.armed && state.motion && !wasMotion) {
+          securityChirp();
+          announce('Test PIR phát hiện chuyển động khi chế độ an ninh đang bật.');
+        }
+      }
+
+      renderTestControls();
+      updateScenarioUI();
+      updateAlarmUI();
+    }
+
+    Object.entries(TEST_INPUTS).forEach(([id, control]) => {
+      control.input.addEventListener('input', () => {
+        const value = control.input.type === 'checkbox'
+          ? (control.input.checked ? 1 : 0)
+          : control.input.value;
+        applySensorTest(id, value);
+      });
+    });
+
+    testResetButton.addEventListener('click', () => {
+      sensorTest.manual = false;
+      state.gas = false;
+      state.rain = false;
+      state.motion = false;
+      motionUntil = 0;
+      nextMotionAt = state.armed ? performance.now() + 7000 : 0;
+      syncTestControlsFromSim();
+      updateScenarioUI();
+      updateAlarmUI();
+      showToast('Đã về mô phỏng', 'Cảm biến trở lại giá trị mô phỏng tự động; gas, mưa và PIR đã reset.', 'info');
+      announce('Đã trở về chế độ mô phỏng cảm biến tự động.');
+    });
+
     function triggerRfid() {
       ensureAudio();
       rfidChime();
@@ -1991,10 +2404,18 @@
 
       if (name === 'rain') {
         state.rain = !state.rain;
+        if (sensorTest.manual) {
+          sensorTest.V4 = state.rain ? 1 : 0;
+          renderTestControls();
+        }
         showToast(state.rain ? 'Kích hoạt mưa' : 'Tạnh mưa', state.rain ? 'Mái che trượt ra, hệ thống làm mát tạm dừng.' : 'Mái che thu về, sân trước trở lại trạng thái khô.', 'info');
         announce(state.rain ? 'Đã bật mô phỏng mưa. Mái che đang mở.' : 'Đã tắt mưa. Mái che đang thu về.');
       } else if (name === 'gas') {
         state.gas = !state.gas;
+        if (sensorTest.manual) {
+          sensorTest.V2 = state.gas ? 1450 : 320;
+          renderTestControls();
+        }
         if (state.gas) {
           lastGasBeepAt = performance.now();
           gasAlarmSound();
@@ -2006,6 +2427,11 @@
         }
       } else if (name === 'security') {
         state.armed = !state.armed;
+        if (sensorTest.manual) {
+          sensorTest.V5 = state.armed ? 1 : 0;
+          state.motion = sensorTest.V5 > 0.5;
+          renderTestControls();
+        }
         if (state.armed) {
           const now = performance.now();
           motionUntil = now + 2600;
@@ -2063,18 +2489,31 @@
 
     function updateStreamValues(dt, now) {
       const t = (now - startedAt) / 1000;
-      const targets = {
-        V0: 27.2 + Math.sin(t * 0.26) * 0.42 + (state.rain ? -0.5 : 0),
-        V1: 59.5 + Math.sin(t * 0.19) * 2.7 + (state.rain ? 6.5 : 0),
-        V2: state.gas ? 1450 + Math.sin(t * 4.1) * 55 : 320 + Math.sin(t * 0.78) * 18,
-        V3: state.lights ? 420 + Math.sin(t * 1.8) * 24 : 18 + Math.sin(t * 0.56) * 4,
-        V4: state.rain ? 1 : 0,
-        V5: state.armed ? (state.motion ? 2 : 0) : (state.motion ? 1 : 0),
-        V6: state.fan || state.gas ? 1 : 0,
-        V7: state.lights ? 1 : 0,
-        V8: door.phase !== 'closed' ? 1 : 0,
-        V9: state.armed ? 1 : 0,
-      };
+      const targets = sensorTest.manual
+        ? {
+            V0: sensorTest.V0,
+            V1: sensorTest.V1,
+            V2: sensorTest.V2,
+            V3: sensorTest.V3,
+            V4: sensorTest.V4,
+            V5: state.armed ? (sensorTest.V5 > 0.5 ? 2 : 0) : (sensorTest.V5 > 0.5 ? 1 : 0),
+            V6: state.fan || state.gas ? 1 : 0,
+            V7: state.lights ? 1 : 0,
+            V8: door.phase !== 'closed' ? 1 : 0,
+            V9: state.armed ? 1 : 0,
+          }
+        : {
+            V0: 27.2 + Math.sin(t * 0.26) * 0.42 + (state.rain ? -0.5 : 0),
+            V1: 59.5 + Math.sin(t * 0.19) * 2.7 + (state.rain ? 6.5 : 0),
+            V2: state.gas ? 1450 + Math.sin(t * 4.1) * 55 : 320 + Math.sin(t * 0.78) * 18,
+            V3: state.lights ? 420 + Math.sin(t * 1.8) * 24 : 18 + Math.sin(t * 0.56) * 4,
+            V4: state.rain ? 1 : 0,
+            V5: state.armed ? (state.motion ? 2 : 0) : (state.motion ? 1 : 0),
+            V6: state.fan || state.gas ? 1 : 0,
+            V7: state.lights ? 1 : 0,
+            V8: door.phase !== 'closed' ? 1 : 0,
+            V9: state.armed ? 1 : 0,
+          };
 
       STREAMS.forEach((stream) => {
         sim[stream.id] = damp(sim[stream.id], targets[stream.id], stream.digital ? 9 : 3.6, dt);
@@ -2291,12 +2730,16 @@
       fanBladeGroup.rotation.z += fanSpeed * dt;
 
       /* PIR-backed security loop. */
-      if (state.armed && now >= nextMotionAt) {
-        nextMotionAt = now + 7200;
-        motionUntil = now + 2200;
-        securityChirp();
+      if (sensorTest.manual) {
+        state.motion = sensorTest.V5 > 0.5;
+      } else {
+        if (state.armed && now >= nextMotionAt) {
+          nextMotionAt = now + 7200;
+          motionUntil = now + 2200;
+          securityChirp();
+        }
+        state.motion = state.armed && now < motionUntil;
       }
-      state.motion = state.armed && now < motionUntil;
 
       const securityPulse = state.motion
         ? 1.9 + (Math.sin(now * 0.026) * 0.5 + 0.5) * 2.1
@@ -2346,6 +2789,7 @@
         updateScenarioUI();
         updateAlarmUI();
         renderStreamValues();
+        syncTestControlsFromSim();
         updateClockAndStats(now);
         lastUiUpdate = now;
       }
@@ -2381,13 +2825,13 @@
     updateAlarmUI();
     updateStreamValues(0.016, performance.now());
     renderStreamValues();
+    syncTestControlsFromSim();
     updateClockAndStats(performance.now());
 
     requestAnimationFrame((now) => {
       clock.start();
       animate(now);
     });
-  </script>
   </script>
 </body>
 </html>
